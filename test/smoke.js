@@ -6,8 +6,9 @@ const path = require('path');
 
 const Q = require(path.join(__dirname, '..', 'src', 'quickagram.js'));
 
-assert.strictEqual(typeof Q.render, 'function', 'Q.render should be a function');
-assert.strictEqual(typeof Q.version, 'string', 'Q.version should be a string');
+assert.strictEqual(typeof Q.render,     'function');
+assert.strictEqual(typeof Q.autoLayout, 'function');
+assert.strictEqual(typeof Q.version,    'string');
 assert.ok(Q.THEMES && typeof Q.THEMES.web === 'object', 'THEMES.web should exist');
 assert.ok(Q.SHAPES && typeof Q.SHAPES.rect === 'function', 'SHAPES.rect should be a function');
 
@@ -19,15 +20,28 @@ for (const k of ['client', 'web', 'api', 'cache', 'db', 'nosql', 'queue', 'stora
   assert.ok(t.shape, 'theme ' + k + ' missing shape');
 }
 
-// Spot-check shape generators return non-empty strings
-for (const s of ['rect', 'cylinder', 'hex', 'cloud', 'bucket', 'queue', 'stack', 'process', 'note', 'actor']) {
-  assert.ok(typeof Q.SHAPES[s] === 'function', 'shape missing: ' + s);
-  const d = Q.SHAPES[s](100, 50);
-  assert.ok(typeof d === 'string' && d.length > 0, 'shape ' + s + ' returned empty path');
-  assert.ok(/^[MmLlHhVvAaQqCcZz0-9 .,\-]+$/.test(d), 'shape ' + s + ' returned malformed path: ' + d);
+// Spot-check shape generators — they may return either a string (body only)
+// or an object { body, decoration?, back? }
+function check(name) {
+  const out = Q.SHAPES[name](100, 50);
+  const body = typeof out === 'string' ? out : out.body;
+  assert.ok(typeof body === 'string' && body.length > 0, 'shape ' + name + ' returned empty body');
+  assert.ok(/^[MmLlHhVvAaQqCcZz0-9 .,\-]+$/.test(body), 'shape ' + name + ' malformed body: ' + body);
 }
+for (const s of ['rect', 'cylinder', 'hex', 'cloud', 'bucket', 'queue', 'stack', 'process', 'note', 'actor']) {
+  check(s);
+}
+
+// Verify the cylinder / queue / note / bucket / stack now split body+decoration.
+for (const s of ['cylinder', 'queue', 'note', 'bucket']) {
+  const out = Q.SHAPES[s](100, 50);
+  assert.ok(typeof out === 'object' && out.decoration, 'shape ' + s + ' should have a `decoration` sub-path now');
+}
+const stackOut = Q.SHAPES.stack(100, 50);
+assert.ok(stackOut.back, 'shape stack should declare a `back` layer for the stacked papers effect');
 
 console.log('OK — Quickagram v' + Q.version);
 console.log('  - render: function');
+console.log('  - autoLayout: function');
 console.log('  - THEMES: ' + Object.keys(Q.THEMES).length + ' kinds');
-console.log('  - SHAPES: ' + Object.keys(Q.SHAPES).length + ' shapes');
+console.log('  - SHAPES: ' + Object.keys(Q.SHAPES).length + ' shapes (queue/note/cylinder/bucket split body+decoration; stack has back layer)');

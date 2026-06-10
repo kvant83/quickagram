@@ -6,12 +6,14 @@
 Quickagram turns a small JavaScript object into a Lucid-style architecture diagram — coloured nodes for different component types (clients, web servers, caches, queues, DBs, …), orthogonal edges with rounded corners and labelled pills, optional grouping, and UML class boxes. No build step, no framework, no runtime dependencies.
 
 ```js
+// Auto-layout (default) — engine works out positions from the graph.
 Quickagram.render('#chart', {
+  layout: 'lr',                                  // left-to-right
   nodes: [
-    { id: 'c',  kind: 'client', label: 'Client',      x: 0,   y: 100 },
-    { id: 'lb', kind: 'lb',     label: 'Load Bal.',   x: 220, y: 100 },
-    { id: 'w',  kind: 'web',    label: 'Web Servers', x: 440, y: 100, sub: 'x N' },
-    { id: 'db', kind: 'db',     label: 'MySQL',       x: 680, y: 100 },
+    { id: 'c',  kind: 'client', label: 'Client' },
+    { id: 'lb', kind: 'lb',     label: 'Load Balancer' },
+    { id: 'w',  kind: 'web',    label: 'Web Servers', sub: '×N' },
+    { id: 'db', kind: 'db',     label: 'MySQL' },
   ],
   edges: [
     { from: 'c',  to: 'lb' },
@@ -20,6 +22,8 @@ Quickagram.render('#chart', {
   ],
 });
 ```
+
+You can still hand-place nodes with explicit `x` / `y` when you need pixel control — see [docs/FORMAT.md](docs/FORMAT.md).
 
 ## Why
 
@@ -101,6 +105,9 @@ See [`examples/`](examples/) for a gallery — open the HTML files directly in a
 
 ## Features
 
+- **Automatic layered layout** (opt in with `layout: "lr"` or `"tb"`) — Sugiyama-lite: longest-path layering + barycenter ordering for minimal edge crossings. No more hand-placing nodes.
+- **Automatic node width** based on label / sub / class content. No more overflowing text.
+- **Edge fan-out** when multiple edges share a `(node, side)` — they spread along the side instead of stacking.
 - **23 built-in node kinds** — `client`, `web`, `api`, `service`, `cache`, `db`, `nosql`, `queue`, `storage`, `cdn`, `dns`, `lb`, `analytics`, `search`, `worker`, `mr`, `process`, `note`, `class`, `actor`, … each with its own colour theme and shape.
 - **10 shape primitives** — rounded rect, cylinder, hex, cloud, bucket, queue with internal dividers, layered stack, process arrow, sticky note, actor stick figure, UML class box.
 - **Orthogonal edge routing** with auto-side picking, rounded corners, optional labels in white pills, dashed/dotted/bidirectional variants.

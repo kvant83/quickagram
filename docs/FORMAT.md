@@ -4,13 +4,27 @@ A Quickagram diagram is a single JavaScript / JSON object passed to `Quickagram.
 
 ```ts
 type Diagram = {
-  nodes:    Node[];        // required
-  edges?:   Edge[];        // default: []
-  groups?:  Group[];       // default: [] — drawn behind nodes
-  padding?: number;        // default: 40 — px around the bounding box
-  maxHeight?: string | false; // default: "78vh" — set false to disable
+  nodes:    Node[];                    // required
+  edges?:   Edge[];                    // default: []
+  groups?:  Group[];                   // default: [] — drawn behind nodes
+  layout?:  'lr' | 'tb';               // omit OR set to enable auto-layout
+                                       // (default: 'lr' if no node has x/y)
+  padding?: number;                    // default: 40 px around the bounding box
+  maxHeight?: string | false;          // default: "78vh" — set false to disable
 };
 ```
+
+## Auto-layout vs manual
+
+The engine has two modes — pick one:
+
+- **Auto-layout** *(recommended)*. Don't set `x` / `y` on nodes. The engine arranges them in layers by longest path, orders nodes within each layer with a barycenter heuristic to minimise edge crossings, and computes positions automatically. Sugiyama-style.
+  - Opt in explicitly with `layout: 'lr'` (left-to-right, default) or `'tb'` (top-to-bottom).
+  - Implicit: if **no** node has `x`/`y`, auto-layout kicks in with `lr` direction.
+  - Pin a node to a specific column / row with `layer: <int>` (e.g. force the DB to layer 3 even if its predecessors would only push it to layer 2).
+- **Manual**. Set `x` and `y` (in SVG pixel units) on every node. Useful when you want a specific hand-tuned layout.
+
+You can mix: most nodes auto-laid out, a few with `layer:` hints to nudge them into the right column.
 
 ---
 
@@ -21,13 +35,15 @@ type Node = {
   id:    string;       // unique within this diagram
   kind:  Kind;         // see KINDS.md
   label: string;       // primary text
-  x:     number;       // top-left X, in SVG units (pixels)
-  y:     number;       // top-left Y, in SVG units (pixels)
 
-  // optional
+  // optional — auto-layout will compute x/y, auto-sizing computes w/h
+  x?:      number;     // top-left X, in SVG units (pixels) — manual mode
+  y?:      number;     // top-left Y, in SVG units (pixels) — manual mode
+  w?:      number;     // override auto-width
+  h?:      number;     // override auto-height
+  layer?:  number;     // auto-layout: pin to this layer/column
+
   sub?:    string;     // small secondary line under the label
-  w?:      number;     // width  — default 168 (220 for `class`)
-  h?:      number;     // height — default 72  (auto for `class`)
   badge?:  string;     // small pill in the top-right corner
 
   // UML class only (kind: 'class')
