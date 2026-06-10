@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] — more generous label gap
+
+### Fixed
+- Per-layer-gap estimate for long edge labels was tight (6.6 px/char + 28 px slack). At 11 px Inter the actual rendered width of mixed-case latin can be marginally wider — labels still touched node edges in some diagrams. Bumped to 8 px/char + 48 px slack so labels always sit comfortably inside the gap.
+
 ## [0.2.1] — readability fixes
 
 ### Fixed

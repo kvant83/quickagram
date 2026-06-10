@@ -1,6 +1,6 @@
 {
   "name": "quickagram",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Tiny, dependency-free SVG diagram engine for system & architecture diagrams. Declarative JSON in, polished SVG out.",
   "keywords": [
     "diagram",

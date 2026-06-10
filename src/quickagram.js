@@ -313,8 +313,10 @@
       if (fl == null || tl == null) continue;
       const minL = Math.min(fl, tl), span = Math.abs(fl - tl);
       if (span !== 1) continue; // back-edges and skips: the label sits on a longer path, plenty of room
-      // approx label pill width at 11px Inter + 6px pad each side + 18px margin
-      const labelW = String(e.label).length * 6.6 + 28;
+      // approx label pill width at 11px Inter + pill padding + stub margins.
+      // Use a generous per-char estimate (8 px) and 48 px slack so the label
+      // never lands flush against a node edge.
+      const labelW = String(e.label).length * 8 + 48;
       if (labelW > layerGap[minL]) layerGap[minL] = Math.ceil(labelW);
     }
 
@@ -745,7 +747,7 @@
 
   return {
     render,
-    version: '0.2.1',
+    version: '0.2.2',
     THEMES,
     SHAPES,
     autoLayout, // exported for advanced use
