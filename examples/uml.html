@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Quickagram — UML class diagram</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; color: #0f172a; }
+    h1 { font-weight: 700; }
+    #chart { background: #f8fafc; border-radius: 12px; padding: 24px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Quickagram — UML class diagram</h1>
+  <p>Parking lot domain model: <code>Vehicle</code> hierarchy with <code>ParkingLot → Level → ParkingSpot</code>.</p>
+  <div id="chart"></div>
+
+  <script src="../src/quickagram.js"></script>
+  <script>
+    Quickagram.render('#chart', {
+      nodes: [
+        { id: 'Vehicle', kind: 'class', label: 'Vehicle «abstract»',
+          attrs: ['+ licensePlate: String', '# size: VehicleSize', '# spotsNeeded: int'],
+          methods: ['+ canFitInSpot(s): bool', '+ park(s[])', '+ clearSpots()'],
+          x: 0, y: 0, w: 260 },
+        { id: 'Motorcycle', kind: 'class', label: 'Motorcycle',
+          attrs: ['# size = MOTORCYCLE', '# spotsNeeded = 1'],
+          x: 0,   y: 240, w: 220 },
+        { id: 'Car', kind: 'class', label: 'Car',
+          attrs: ['# size = COMPACT', '# spotsNeeded = 1'],
+          x: 240, y: 240, w: 220 },
+        { id: 'Bus', kind: 'class', label: 'Bus',
+          attrs: ['# size = LARGE', '# spotsNeeded = 5'],
+          x: 480, y: 240, w: 220 },
+
+        { id: 'ParkingLot', kind: 'class', label: 'ParkingLot',
+          attrs: ['- levels: Level[]'],
+          methods: ['+ parkVehicle(v): bool'],
+          x: 480, y: 0, w: 240 },
+        { id: 'Level', kind: 'class', label: 'Level',
+          attrs: ['- spots: ParkingSpot[]', '- availableSpots: int'],
+          methods: ['+ parkVehicle(v): bool', '+ spotFreed()'],
+          x: 760, y: 0, w: 260 },
+        { id: 'Spot', kind: 'class', label: 'ParkingSpot',
+          attrs: ['- size: SpotSize', '- vehicle: Vehicle?'],
+          methods: ['+ isAvailable(): bool', '+ canFit(v): bool'],
+          x: 760, y: 240, w: 260 },
+      ],
+      edges: [
+        { from: 'Motorcycle', to: 'Vehicle', label: 'extends', style: 'dashed' },
+        { from: 'Car',        to: 'Vehicle', label: 'extends', style: 'dashed' },
+        { from: 'Bus',        to: 'Vehicle', label: 'extends', style: 'dashed' },
+        { from: 'ParkingLot', to: 'Level',   label: '1 → *' },
+        { from: 'Level',      to: 'Spot',    label: '1 → *' },
+        { from: 'Spot',       to: 'Vehicle', label: 'holds 0..1', style: 'dashed' },
+      ],
+    });
+  </script>
+</body>
+</html>

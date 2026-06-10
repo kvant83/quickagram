@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Quickagram — web architecture</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; max-width: 1280px; margin: 40px auto; padding: 0 20px; color: #0f172a; }
+    h1 { font-weight: 700; }
+    .card { background: #f8fafc; border-radius: 12px; padding: 24px; margin-top: 16px; }
+    .card + .card { margin-top: 24px; }
+    h2 { margin: 0 0 10px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Quickagram — scaled web architecture</h1>
+
+  <div class="card">
+    <h2>High-level</h2>
+    <div id="d1"></div>
+  </div>
+
+  <div class="card">
+    <h2>Scaled</h2>
+    <div id="d2"></div>
+  </div>
+
+  <script src="../src/quickagram.js"></script>
+  <script>
+    Quickagram.render('#d1', {
+      nodes: [
+        { id: 'client', kind: 'client', label: 'Client',        x: 0,   y: 120 },
+        { id: 'web',    kind: 'web',    label: 'Web Server',    x: 240, y: 120 },
+        { id: 'api',    kind: 'api',    label: 'API Server',    x: 480, y: 120 },
+        { id: 'cache',  kind: 'cache',  label: 'Memory Cache',  x: 720, y: 0   },
+        { id: 'db',     kind: 'db',     label: 'SQL DB',        x: 720, y: 240 },
+      ],
+      edges: [
+        { from: 'client', to: 'web' },
+        { from: 'web',    to: 'api' },
+        { from: 'api',    to: 'cache', label: 'read-through' },
+        { from: 'api',    to: 'db' },
+      ],
+    });
+
+    Quickagram.render('#d2', {
+      nodes: [
+        { id: 'dns',     kind: 'dns',     label: 'DNS',         x: 0,   y: 0,   h: 64 },
+        { id: 'cdn',     kind: 'cdn',     label: 'CDN',         x: 240, y: 0,   h: 64 },
+        { id: 'client',  kind: 'client',  label: 'Client',      x: 0,   y: 200 },
+        { id: 'lb',      kind: 'lb',      label: 'Load Bal.',   x: 240, y: 200 },
+        { id: 'web',     kind: 'web',     label: 'Web Servers', sub: '×N', x: 460, y: 200 },
+        { id: 'api',     kind: 'api',     label: 'API Servers', sub: '×N', x: 680, y: 200 },
+        { id: 'cache',   kind: 'cache',   label: 'Memory Cache', x: 900, y: 40  },
+        { id: 'master',  kind: 'db',      label: 'SQL Master',  badge: 'WR', x: 900, y: 200 },
+        { id: 'replica', kind: 'db',      label: 'SQL Replicas', sub: '×N', badge: 'RO', x: 900, y: 360 },
+        { id: 'queue',   kind: 'queue',   label: 'Queue',       x: 460, y: 420 },
+        { id: 'worker',  kind: 'worker',  label: 'Workers',     x: 680, y: 420 },
+        { id: 'obj',     kind: 'storage', label: 'Object Store', x: 1140, y: 200 },
+      ],
+      edges: [
+        { from: 'client', to: 'dns', style: 'dashed' },
+        { from: 'client', to: 'cdn', style: 'dashed' },
+        { from: 'client', to: 'lb' },
+        { from: 'lb',     to: 'web' },
+        { from: 'web',    to: 'api' },
+        { from: 'api',    to: 'cache' },
+        { from: 'api',    to: 'master',  label: 'writes' },
+        { from: 'api',    to: 'replica', label: 'reads'  },
+        { from: 'master', to: 'replica', style: 'dashed' },
+        { from: 'api',    to: 'queue' },
+        { from: 'queue',  to: 'worker' },
+        { from: 'worker', to: 'obj' },
+        { from: 'worker', to: 'master' },
+      ],
+    });
+  </script>
+</body>
+</html>

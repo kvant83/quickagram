@@ -1,0 +1,41 @@
+{
+  "name": "quickagram",
+  "version": "0.1.0",
+  "description": "Tiny, dependency-free SVG diagram engine for system & architecture diagrams. Declarative JSON in, polished SVG out.",
+  "keywords": [
+    "diagram",
+    "svg",
+    "architecture",
+    "system-design",
+    "uml",
+    "mermaid-alternative",
+    "lucid",
+    "flowchart"
+  ],
+  "main": "src/quickagram.js",
+  "browser": "src/quickagram.js",
+  "files": [
+    "src/",
+    "docs/",
+    "examples/",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kvant83/quickagram.git"
+  },
+  "homepage": "https://github.com/kvant83/quickagram#readme",
+  "bugs": {
+    "url": "https://github.com/kvant83/quickagram/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "The Quickagram authors",
+  "engines": {
+    "node": ">=14"
+  },
+  "scripts": {
+    "test": "node test/smoke.js"
+  }
+}

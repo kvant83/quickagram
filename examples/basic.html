@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Quickagram — basic example</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; max-width: 980px; margin: 40px auto; padding: 0 20px; color: #0f172a; }
+    h1 { font-weight: 700; }
+    #chart { background: #f8fafc; border-radius: 12px; padding: 24px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Quickagram — basic example</h1>
+  <p>Five-node web architecture rendered from a single object literal.</p>
+  <div id="chart"></div>
+
+  <script src="../src/quickagram.js"></script>
+  <script>
+    Quickagram.render('#chart', {
+      nodes: [
+        { id: 'client', kind: 'client', label: 'Client',        x: 0,   y: 120 },
+        { id: 'cdn',    kind: 'cdn',    label: 'CDN',           x: 240, y: 0   },
+        { id: 'lb',     kind: 'lb',     label: 'Load Balancer', x: 240, y: 120 },
+        { id: 'web',    kind: 'web',    label: 'Web Servers',
+                                        sub: '×N',              x: 480, y: 120 },
+        { id: 'cache',  kind: 'cache',  label: 'Redis',         x: 720, y: 0   },
+        { id: 'db',     kind: 'db',     label: 'MySQL',         x: 720, y: 240, badge: 'WR' },
+      ],
+      edges: [
+        { from: 'client', to: 'cdn', style: 'dashed' },
+        { from: 'client', to: 'lb' },
+        { from: 'lb',     to: 'web' },
+        { from: 'web',    to: 'cache', label: 'check' },
+        { from: 'web',    to: 'db',    label: 'miss → query' },
+      ],
+    });
+  </script>
+</body>
+</html>
