@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — readability fixes
+
+### Fixed
+- **Text legibility on light kinds.** `plain` and `note` rendered their labels in white on a near-white gradient — invisible. The engine now picks text colour from the gradient's average luminance (WCAG-ish), so light kinds get dark ink (`#1e293b`) automatically. Affects label, sub-label, icon stroke, badge text and surfaces.
+- **Edge-label overflow between layers.** Auto-layout used a constant 100-px gap between columns regardless of label length, so any label wider than the gap overflowed into the neighbouring node. Per-gap spacing now grows to fit the longest forward edge label crossing that gap.
+
+### Notes
+- Pure rendering fix — same diagram input renders correctly. No data changes required.
+
 ## [0.2.0] — engine quality release
 
 ### Added

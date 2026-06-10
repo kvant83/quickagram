@@ -66,6 +66,20 @@
     const m = c => Math.min(255, Math.round(c + (255 - c) * amt));
     return `#${m(r).toString(16).padStart(2, '0')}${m(g).toString(16).padStart(2, '0')}${m(b).toString(16).padStart(2, '0')}`;
   };
+  // Approximate luminance of a hex colour, 0..1
+  const luminance = hex => {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substr(0, 2), 16) / 255;
+    const g = parseInt(h.substr(2, 2), 16) / 255;
+    const b = parseInt(h.substr(4, 2), 16) / 255;
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  };
+  // Pick a readable text colour for a node's gradient — light kinds (plain,
+  // note, cache) get dark text; everything else gets white.
+  const textColorFor = theme => {
+    const avg = (luminance(theme.top) + luminance(theme.bot)) / 2;
+    return avg > 0.62 ? '#1e293b' : '#ffffff';
+  };
 
   /* ---------- shapes: each returns either a path string (body only)
                        or { body, decoration?, back? }
@@ -288,10 +302,24 @@
       for (let l = maxL - 1; l >= 0; l--) reorder(l, l + 1, out);
     }
 
-    // 6. Position. Each layer is a column (LR) or row (TB). Secondary axis
-    //    centres the layer's nodes around 0; primary axis advances cursor.
-    const COL_GAP = 90;
+    // 6. Per-gap spacing — grow the gap between layers L and L+1 if there
+    //    are long edge labels crossing that gap, so labels don't overflow.
+    const COL_GAP = 100;
     const ROW_GAP = 36;
+    const layerGap = Array(Math.max(0, maxL)).fill(COL_GAP);
+    for (const e of edges) {
+      if (!e.label) continue;
+      const fl = layer.get(e.from), tl = layer.get(e.to);
+      if (fl == null || tl == null) continue;
+      const minL = Math.min(fl, tl), span = Math.abs(fl - tl);
+      if (span !== 1) continue; // back-edges and skips: the label sits on a longer path, plenty of room
+      // approx label pill width at 11px Inter + 6px pad each side + 18px margin
+      const labelW = String(e.label).length * 6.6 + 28;
+      if (labelW > layerGap[minL]) layerGap[minL] = Math.ceil(labelW);
+    }
+
+    // 7. Position. Each layer is a column (LR) or row (TB). Secondary axis
+    //    centres the layer's nodes around 0; primary axis advances cursor.
 
     let primaryCursor = 0;
     let secondaryMin = Infinity, secondaryMax = -Infinity;
@@ -316,7 +344,8 @@
         secondaryMin = Math.min(secondaryMin, isLR ? n.y : n.x);
         secondaryMax = Math.max(secondaryMax, isLR ? n.y + n._h : n.x + n._w);
       });
-      primaryCursor += layerPrimary + COL_GAP;
+      const gap = l < maxL ? layerGap[l] : 0;
+      primaryCursor += layerPrimary + gap;
     }
   }
 
@@ -324,6 +353,14 @@
   function drawNode(svg, defs, node) {
     const theme = THEMES[node.kind] || THEMES.plain;
     const w = node._w, h = node._h;
+    const ink = textColorFor(theme);                 // foreground (label, icon, sub)
+    const isLight = ink === '#1e293b';
+    // semi-transparent counterpart for decoration strokes and badge surfaces
+    const onLightHi  = 'rgba(15,23,42,0.62)';        // dark wash for light bg
+    const onDarkHi   = 'rgba(255,255,255,0.85)';     // white wash for dark bg
+    const decorStroke = isLight ? onLightHi : '#ffffff';
+    const badgeFill   = isLight ? 'rgba(15,23,42,0.10)' : 'rgba(255,255,255,0.25)';
+    const badgeStroke = isLight ? 'rgba(15,23,42,0.25)' : 'rgba(255,255,255,0.45)';
 
     const g = $('g', { class: 'qa-node', transform: `translate(${node.x},${node.y})`, 'data-id': node.id }, svg);
     const gradId = ensureGradient(defs, theme);
@@ -342,8 +379,8 @@
     }, g);
     if (decoration) {
       $('path', {
-        d: decoration, fill: 'none', stroke: '#ffffff',
-        'stroke-width': 1.2, 'stroke-opacity': 0.7,
+        d: decoration, fill: 'none', stroke: decorStroke,
+        'stroke-width': 1.2, 'stroke-opacity': isLight ? 1 : 0.7,
         'stroke-linecap': 'round',
       }, g);
     }
@@ -354,14 +391,14 @@
     if (hasIcon) {
       const ig = $('g', { transform: `translate(16, ${h / 2})`, opacity: '0.9' }, g);
       $('path', {
-        d: ICONS[theme.icon], fill: 'none', stroke: '#fff',
+        d: ICONS[theme.icon], fill: 'none', stroke: ink,
         'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
       }, ig);
     }
 
     const t = $('text', {
       x: textX, y: h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
-      fill: '#fff', 'font-family': "'Inter', system-ui, sans-serif",
+      fill: ink, 'font-family': "'Inter', system-ui, sans-serif",
       'font-size': '13', 'font-weight': '600', 'pointer-events': 'none',
     }, g);
 
@@ -378,11 +415,11 @@
       const bw = Math.max(22, node.badge.length * 7 + 10);
       $('rect', {
         x: -bw, y: -6, width: bw, height: 16, rx: 8,
-        fill: 'rgba(255,255,255,0.25)', stroke: 'rgba(255,255,255,0.45)',
+        fill: badgeFill, stroke: badgeStroke,
       }, bg);
       $('text', {
         x: -bw / 2, y: 2, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
-        fill: '#fff', 'font-size': '10', 'font-weight': '700',
+        fill: ink, 'font-size': '10', 'font-weight': '700',
         'font-family': "'Inter', system-ui, sans-serif",
       }, bg).textContent = node.badge;
     }
@@ -708,7 +745,7 @@
 
   return {
     render,
-    version: '0.2.0',
+    version: '0.2.1',
     THEMES,
     SHAPES,
     autoLayout, // exported for advanced use
