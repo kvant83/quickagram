@@ -378,6 +378,239 @@ t('installTheme injects a <style> tag the first time, idempotent after', () => {
 });
 
 /* =====================================================================
+ * v0.4 — Mermaid-compatibility additions
+ * =====================================================================
+ *  - new shapes:  circle / stadium / parallelogram / parallelogramAlt /
+ *                 trapezoid / trapezoidAlt / diamond / dot / doubleDot
+ *  - new themes:  state / start / end / participant
+ *  - new edge arrows: triangle / diamond / odiamond / circle / cross
+ *  - sequence layout mode
+ * ===================================================================== */
+section('v0.4: new shapes');
+t('all new shapes return non-empty path / shape descriptor', () => {
+  for (const name of ['circle','stadium','parallelogram','parallelogramAlt','trapezoid','trapezoidAlt','diamond','dot','doubleDot']) {
+    const out = Q.SHAPES[name](100, 60);
+    if (typeof out === 'string') assert.ok(out.length > 0, name + ' empty');
+    else { assert.ok(out.body, name + ' body missing'); }
+  }
+});
+
+t('new kinds render without error and place a body path', () => {
+  for (const kind of ['circle','stadium','parallelogram','trapezoid','diamond','state','start','end','participant']) {
+    const { container } = render({
+      nodes: [{ id: 'a', kind, label: 'A', x: 0, y: 0 }],
+    });
+    const svg = container.children[0];
+    const nodeG = svg.querySelectorAll('.qa-node')[0];
+    assert.ok(nodeG, kind + ' node not created');
+    // each new shape draws at least one <path> for its body
+    const paths = nodeG.children.filter(c => c.tag === 'path');
+    assert.ok(paths.length >= 1, kind + ' has no <path>');
+  }
+});
+
+t('start/end kinds get a small SQUARE bbox (~24px), not text-sized rect', () => {
+  // stateDiagram [*] markers are little circles; without this the bbox
+  // is text-sized (168x72) and arrows terminate far from the visible dot.
+  const d = {
+    nodes: [
+      { id: 's', kind: 'start', label: '', x: 0,  y: 0 },
+      { id: 'e', kind: 'end',   label: '', x: 60, y: 0 },
+    ],
+  };
+  render(d);
+  for (const n of d.nodes) {
+    assert.strictEqual(n._w, 24, n.id + ' bbox w');
+    assert.strictEqual(n._h, 24, n.id + ' bbox h');
+  }
+});
+
+t('circle / diamond kinds get a SQUARE bbox so arrows land on visible body', () => {
+  // Auto-sized circle/diamond previously inherited a 168x72 rectangular
+  // bbox from text autosizing; arrows entered from the left landed in
+  // empty space outside the visible curve.
+  for (const kind of ['circle', 'diamond']) {
+    const d = { nodes: [{ id: 'a', kind, label: 'Yes path' }] };
+    render(d);
+    assert.strictEqual(d.nodes[0]._w, d.nodes[0]._h, kind + ' bbox not square');
+  }
+});
+
+section('v0.4: new edge arrows');
+t('ensureDefs creates all 6 markers', () => {
+  const { container } = render({
+    nodes: [
+      { id: 'a', kind: 'plain', label: 'A', x: 0,   y: 0 },
+      { id: 'b', kind: 'plain', label: 'B', x: 300, y: 0 },
+    ],
+    edges: [{ from: 'a', to: 'b' }],
+  });
+  const svg = container.children[0];
+  const defs = svg.children.find(c => c.tag === 'defs');
+  assert.ok(defs, 'defs missing');
+  const markerIds = defs.children
+    .filter(c => c.tag === 'marker')
+    .map(c => c.attrs.id);
+  for (const id of ['qa-arrow','qa-triangle','qa-diamond','qa-odiamond','qa-circle','qa-cross']) {
+    assert.ok(markerIds.includes(id), 'missing marker ' + id);
+  }
+});
+
+t('edge.toArrow="triangle" selects the triangle marker at the end', () => {
+  const { container } = render({
+    nodes: [
+      { id: 'parent', kind: 'class', label: 'Animal', x: 0,   y: 0 },
+      { id: 'child',  kind: 'class', label: 'Dog',    x: 320, y: 0 },
+    ],
+    edges: [{ from: 'child', to: 'parent', toArrow: 'triangle' }],
+  });
+  const svg = container.children[0];
+  const edgePath = svg.querySelector('.qa-edge').children.find(c => c.tag === 'path');
+  assert.strictEqual(edgePath.attrs['marker-end'], 'url(#qa-triangle)');
+});
+
+t('edge.fromArrow="diamond" selects diamond at the source end (composition)', () => {
+  const { container } = render({
+    nodes: [
+      { id: 'whole', kind: 'class', label: 'Car',  x: 0,   y: 0 },
+      { id: 'part',  kind: 'class', label: 'Engine', x: 320, y: 0 },
+    ],
+    edges: [{ from: 'whole', to: 'part', fromArrow: 'diamond', toArrow: 'none' }],
+  });
+  const svg = container.children[0];
+  const edgePath = svg.querySelector('.qa-edge').children.find(c => c.tag === 'path');
+  assert.strictEqual(edgePath.attrs['marker-start'], 'url(#qa-diamond)');
+  assert.strictEqual(edgePath.attrs['marker-end'], undefined, 'toArrow="none" → no end marker');
+});
+
+t('edge.toArrow="none" produces no end marker even without explicit endArrow flag', () => {
+  const { container } = render({
+    nodes: [
+      { id: 'a', kind: 'plain', label: 'A', x: 0,   y: 0 },
+      { id: 'b', kind: 'plain', label: 'B', x: 200, y: 0 },
+    ],
+    edges: [{ from: 'a', to: 'b', toArrow: 'none' }],
+  });
+  const svg = container.children[0];
+  const edgePath = svg.querySelector('.qa-edge').children.find(c => c.tag === 'path');
+  assert.strictEqual(edgePath.attrs['marker-end'], undefined);
+});
+
+t('legacy endArrow=false still works (back-compat)', () => {
+  const { container } = render({
+    nodes: [
+      { id: 'a', kind: 'plain', label: 'A', x: 0,   y: 0 },
+      { id: 'b', kind: 'plain', label: 'B', x: 200, y: 0 },
+    ],
+    edges: [{ from: 'a', to: 'b', endArrow: false }],
+  });
+  const svg = container.children[0];
+  const edgePath = svg.querySelector('.qa-edge').children.find(c => c.tag === 'path');
+  assert.strictEqual(edgePath.attrs['marker-end'], undefined);
+});
+
+section('v0.4: sequence layout');
+t('participants laid out in a row at y=0', () => {
+  const d = {
+    layout: 'sequence',
+    nodes: [
+      { id: 'a', kind: 'participant', label: 'Alice' },
+      { id: 'b', kind: 'participant', label: 'Bob'   },
+      { id: 'c', kind: 'participant', label: 'Carol' },
+    ],
+    edges: [{ from: 'a', to: 'b', label: 'Hi' }],
+  };
+  render(d);
+  for (const n of d.nodes) assert.strictEqual(n.y, 0);
+  // participants are in declaration order, increasing x
+  assert.ok(d.nodes[0].x < d.nodes[1].x, 'a left of b');
+  assert.ok(d.nodes[1].x < d.nodes[2].x, 'b left of c');
+});
+
+t('edges get _seqY assigned in increasing order', () => {
+  const d = {
+    layout: 'sequence',
+    nodes: [
+      { id: 'a', kind: 'participant', label: 'A' },
+      { id: 'b', kind: 'participant', label: 'B' },
+    ],
+    edges: [
+      { from: 'a', to: 'b', label: 'hello' },
+      { from: 'b', to: 'a', label: 'world', style: 'dashed' },
+      { from: 'a', to: 'b', label: 'again' },
+    ],
+  };
+  render(d);
+  assert.ok(d.edges[0]._seqY < d.edges[1]._seqY, 'edge 0 above edge 1');
+  assert.ok(d.edges[1]._seqY < d.edges[2]._seqY, 'edge 1 above edge 2');
+});
+
+t('lifelines drawn — one vertical line per participant', () => {
+  const { container, diagram } = render({
+    layout: 'sequence',
+    nodes: [
+      { id: 'a', kind: 'participant', label: 'A' },
+      { id: 'b', kind: 'participant', label: 'B' },
+      { id: 'c', kind: 'participant', label: 'C' },
+    ],
+    edges: [{ from: 'a', to: 'b' }],
+  });
+  const svg = container.children[0];
+  const lifelineG = svg.children.find(c => (c.attrs.class || '') === 'qa-lifelines');
+  assert.ok(lifelineG, 'lifeline group not found');
+  const lines = lifelineG.children.filter(c => c.tag === 'line');
+  assert.strictEqual(lines.length, 3, 'expected 3 lifelines, got ' + lines.length);
+  // each lifeline x matches the participant's centre x
+  for (let i = 0; i < diagram.nodes.length; i++) {
+    const cx = diagram.nodes[i].x + diagram.nodes[i]._w / 2;
+    assert.strictEqual(+lines[i].attrs.x1, cx);
+  }
+});
+
+t('sequence edges render as straight horizontal arrows', () => {
+  const { container } = render({
+    layout: 'sequence',
+    nodes: [
+      { id: 'a', kind: 'participant', label: 'A' },
+      { id: 'b', kind: 'participant', label: 'B' },
+    ],
+    edges: [{ from: 'a', to: 'b', label: 'msg' }],
+  });
+  const svg = container.children[0];
+  const edge = svg.querySelector('.qa-edge');
+  assert.ok(edge, 'edge group missing');
+  const path = edge.children.find(c => c.tag === 'path');
+  // straight-line "M x y L x y" format
+  assert.ok(/^M [\d.]+ [\d.]+ L [\d.]+ [\d.]+$/.test(path.attrs.d), 'expected straight line, got ' + path.attrs.d);
+});
+
+t('sequence: self-message renders as a loop path', () => {
+  const { container } = render({
+    layout: 'sequence',
+    nodes: [{ id: 'a', kind: 'participant', label: 'A' }],
+    edges: [{ from: 'a', to: 'a', label: 'self' }],
+  });
+  const svg = container.children[0];
+  const path = svg.querySelector('.qa-edge').children.find(c => c.tag === 'path');
+  // loop path = M..h..v..h..
+  assert.ok(/h [-\d.]+ v [-\d.]+ h [-\d.]+/.test(path.attrs.d), 'expected loop path, got ' + path.attrs.d);
+});
+
+t('sequence: dashed style honored on response messages', () => {
+  const { container } = render({
+    layout: 'sequence',
+    nodes: [
+      { id: 'a', kind: 'participant', label: 'A' },
+      { id: 'b', kind: 'participant', label: 'B' },
+    ],
+    edges: [{ from: 'a', to: 'b', style: 'dashed' }],
+  });
+  const svg = container.children[0];
+  const path = svg.querySelector('.qa-edge').children.find(c => c.tag === 'path');
+  assert.strictEqual(path.attrs['stroke-dasharray'], '6 5');
+});
+
+/* =====================================================================
  * Summary
  * ===================================================================== */
 console.log('\n----------------------------------------');

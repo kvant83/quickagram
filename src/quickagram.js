@@ -41,6 +41,20 @@
     class:    { top: '#818cf8', bot: '#4f46e5', border: '#3730a3', shape: 'class'                    },
     actor:    { top: '#fbcfe8', bot: '#ec4899', border: '#831843', shape: 'actor'                    },
     plain:    { top: '#f1f5f9', bot: '#e2e8f0', border: '#94a3b8', shape: 'rect'                     },
+    /* ---- new shapes added in v0.4: flowchart / state / sequence ---- */
+    circle:        { top: '#fde68a', bot: '#fbbf24', border: '#b45309', shape: 'circle'                },
+    stadium:       { top: '#bae6fd', bot: '#38bdf8', border: '#075985', shape: 'stadium'               },
+    parallelogram: { top: '#ddd6fe', bot: '#a78bfa', border: '#5b21b6', shape: 'parallelogram'         },
+    parallelogramAlt:{top:'#ddd6fe', bot: '#a78bfa', border: '#5b21b6', shape: 'parallelogramAlt'      },
+    trapezoid:     { top: '#fed7aa', bot: '#fb923c', border: '#9a3412', shape: 'trapezoid'             },
+    trapezoidAlt:  { top: '#fed7aa', bot: '#fb923c', border: '#9a3412', shape: 'trapezoidAlt'          },
+    diamond:       { top: '#fef3c7', bot: '#fbbf24', border: '#92400e', shape: 'diamond'               },
+    state:         { top: '#e0e7ff', bot: '#a5b4fc', border: '#3730a3', shape: 'rect'                  },
+    /* small markers used by stateDiagrams for [*] start/end. */
+    start:         { top: '#1e293b', bot: '#0f172a', border: '#000000', shape: 'dot'                   },
+    end:           { top: '#1e293b', bot: '#0f172a', border: '#000000', shape: 'doubleDot'             },
+    /* sequenceDiagram participant column header. */
+    participant:   { top: '#e0e7ff', bot: '#818cf8', border: '#3730a3', shape: 'rect'                  },
   };
 
   const ICONS = {
@@ -153,6 +167,64 @@
       const cx = w / 2;
       return `M ${cx} 8 a 8 8 0 1 1 0.001 0 Z M ${cx} 16 v 18 M ${cx - 12} 22 h 24 M ${cx} 34 l -10 14 M ${cx} 34 l 10 14`;
     },
+
+    /* ---- new shapes for flowchart / state / sequence ---- */
+    circle: (w, h) => {
+      const r = Math.min(w, h) / 2;
+      const cx = w / 2, cy = h / 2;
+      return `M ${cx - r} ${cy} a ${r} ${r} 0 1 0 ${r * 2} 0 a ${r} ${r} 0 1 0 ${-r * 2} 0 Z`;
+    },
+
+    stadium: (w, h) => {
+      // pill: rectangle with semicircular ends (Mermaid `id([text])`)
+      const r = h / 2;
+      return `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+    },
+
+    parallelogram: (w, h) => {
+      // leans right: Mermaid `id[/text/]`
+      const k = Math.min(h * 0.6, w * 0.25);
+      return `M ${k} 0 H ${w} L ${w - k} ${h} H 0 Z`;
+    },
+    parallelogramAlt: (w, h) => {
+      // leans left: Mermaid `id[\text\]`
+      const k = Math.min(h * 0.6, w * 0.25);
+      return `M 0 0 H ${w - k} L ${w} ${h} H ${k} Z`;
+    },
+
+    trapezoid: (w, h) => {
+      // wider at bottom: Mermaid `id[/text\]`
+      const k = Math.min(h * 0.6, w * 0.25);
+      return `M ${k} 0 H ${w - k} L ${w} ${h} H 0 Z`;
+    },
+    trapezoidAlt: (w, h) => {
+      // wider at top: Mermaid `id[\text/]`
+      const k = Math.min(h * 0.6, w * 0.25);
+      return `M 0 0 H ${w} L ${w - k} ${h} H ${k} Z`;
+    },
+
+    diamond: (w, h) => {
+      // 4-corner rhombus: Mermaid `id{text}`
+      const cx = w / 2, cy = h / 2;
+      return `M ${cx} 0 L ${w} ${cy} L ${cx} ${h} L 0 ${cy} Z`;
+    },
+
+    /* small filled-circle marker for stateDiagram [*] start. */
+    dot: (w, h) => {
+      const r = Math.min(w, h) / 2;
+      const cx = w / 2, cy = h / 2;
+      return `M ${cx - r} ${cy} a ${r} ${r} 0 1 0 ${r * 2} 0 a ${r} ${r} 0 1 0 ${-r * 2} 0 Z`;
+    },
+    /* ringed dot for stateDiagram [*] end. */
+    doubleDot: (w, h) => {
+      const r = Math.min(w, h) / 2;
+      const cx = w / 2, cy = h / 2;
+      const rin = r * 0.55;
+      return {
+        body:       `M ${cx - r} ${cy} a ${r} ${r} 0 1 0 ${r * 2} 0 a ${r} ${r} 0 1 0 ${-r * 2} 0 Z`,
+        decoration: `M ${cx - rin} ${cy} a ${rin} ${rin} 0 1 0 ${rin * 2} 0 a ${rin} ${rin} 0 1 0 ${-rin * 2} 0 Z`,
+      };
+    },
   };
 
   /* ---------- defs (gradients + shadow + arrowheads) ---------- */
@@ -170,12 +242,62 @@
     $('feMergeNode', {}, merge);
     $('feMergeNode', { in: 'SourceGraphic' }, merge);
 
-    const mk = (id, color) => {
+    /* Helpers — each marker is a 10x10 unit symbol attached at refX=9,
+     * refY=5 so the marker's tip aligns with the line endpoint. We use
+     * orient="auto-start-reverse" so the same marker works at either
+     * end of a line. */
+    const filledArrow = (id, color) => {
       const m = $('marker', { id, viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '8', markerHeight: '8', orient: 'auto-start-reverse' }, defs);
       $('path', { d: 'M 0 0 L 10 5 L 0 10 Z', fill: color }, m);
     };
-    mk('qa-arrow', '#334155');
+    const openTriangle = (id, color) => {
+      // Open triangle — UML inheritance / generalisation. Big head, hollow.
+      const m = $('marker', { id, viewBox: '0 0 12 12', refX: '11', refY: '6', markerWidth: '12', markerHeight: '12', orient: 'auto-start-reverse' }, defs);
+      $('path', { d: 'M 0 0 L 11 6 L 0 12 Z', fill: '#ffffff', stroke: color, 'stroke-width': '1.6', 'stroke-linejoin': 'round' }, m);
+    };
+    const filledDiamond = (id, color) => {
+      // Filled diamond — UML composition. Sits at SOURCE end.
+      const m = $('marker', { id, viewBox: '0 0 14 10', refX: '1', refY: '5', markerWidth: '14', markerHeight: '10', orient: 'auto-start-reverse' }, defs);
+      $('path', { d: 'M 0 5 L 7 0 L 14 5 L 7 10 Z', fill: color, stroke: color, 'stroke-width': '1.2', 'stroke-linejoin': 'round' }, m);
+    };
+    const openDiamond = (id, color) => {
+      // Hollow diamond — UML aggregation. Sits at SOURCE end.
+      const m = $('marker', { id, viewBox: '0 0 14 10', refX: '1', refY: '5', markerWidth: '14', markerHeight: '10', orient: 'auto-start-reverse' }, defs);
+      $('path', { d: 'M 0 5 L 7 0 L 14 5 L 7 10 Z', fill: '#ffffff', stroke: color, 'stroke-width': '1.4', 'stroke-linejoin': 'round' }, m);
+    };
+    const filledCircle = (id, color) => {
+      // Solid circle endpoint (Mermaid flowchart `--o`).
+      const m = $('marker', { id, viewBox: '0 0 10 10', refX: '5', refY: '5', markerWidth: '8', markerHeight: '8', orient: 'auto-start-reverse' }, defs);
+      $('circle', { cx: '5', cy: '5', r: '4', fill: color, stroke: color }, m);
+    };
+    const cross = (id, color) => {
+      // X endpoint (Mermaid flowchart `--x`).
+      const m = $('marker', { id, viewBox: '0 0 10 10', refX: '5', refY: '5', markerWidth: '10', markerHeight: '10', orient: 'auto-start-reverse' }, defs);
+      $('path', { d: 'M 1 1 L 9 9 M 9 1 L 1 9', fill: 'none', stroke: color, 'stroke-width': '1.8', 'stroke-linecap': 'round' }, m);
+    };
+    const COLOR = '#334155';
+    filledArrow ('qa-arrow',     COLOR);
+    openTriangle('qa-triangle',  COLOR);
+    filledDiamond('qa-diamond',  COLOR);
+    openDiamond ('qa-odiamond',  COLOR);
+    filledCircle('qa-circle',    COLOR);
+    cross       ('qa-cross',     COLOR);
     return defs;
+  }
+
+  /* Map an edge's arrow-name to its marker id. `'none'` and falsy values
+   * mean "no marker". Default at the destination end is the regular arrow. */
+  const ARROW_MARKER = {
+    'arrow':    'qa-arrow',
+    'triangle': 'qa-triangle',
+    'diamond':  'qa-diamond',
+    'odiamond': 'qa-odiamond',
+    'circle':   'qa-circle',
+    'cross':    'qa-cross',
+  };
+  function arrowMarker(name) {
+    if (!name || name === 'none') return null;
+    return ARROW_MARKER[name] ? `url(#${ARROW_MARKER[name]})` : null;
   }
 
   function ensureGradient(defs, theme) {
@@ -208,12 +330,29 @@
       return { w, h };
     }
     const theme = THEMES[node.kind] || THEMES.plain;
+    // stateDiagram `[*]` markers render as small filled / ringed circles.
+    // Their bbox MUST be small + square — otherwise auto-layout reserves a
+    // text-sized rectangle of space and arrows terminate at that hidden
+    // rectangle edge, far from the visible dot.
+    if (theme.shape === 'dot' || theme.shape === 'doubleDot') {
+      const d = node.w || node.h || 24;
+      return { w: d, h: d };
+    }
     const hasIcon = theme.icon && ICONS[theme.icon];
     const labelW = (node.label || '').length * CHAR_W_SANS;
     const subW   = (node.sub   || '').length * SUB_CHAR_W;
     const contentW = Math.max(labelW, subW);
-    const w = node.w || Math.max(DEFAULT_W, Math.ceil(contentW + (hasIcon ? 32 : 0) + 36));
-    const h = node.h || (node.sub ? Math.max(DEFAULT_H, 78) : DEFAULT_H);
+    let w = node.w || Math.max(DEFAULT_W, Math.ceil(contentW + (hasIcon ? 32 : 0) + 36));
+    let h = node.h || (node.sub ? Math.max(DEFAULT_H, 78) : DEFAULT_H);
+    // Circle / diamond shapes should be SQUARE so their visible body
+    // aligns with the bounding box on all four sides. Otherwise an
+    // arrow entering from the left lands in empty space outside the
+    // visible curve. Stadium (pill) is intentionally wider than tall.
+    if (theme.shape === 'circle' || theme.shape === 'diamond') {
+      const m = Math.max(w, h);
+      w = node.w || m;
+      h = node.h || m;
+    }
     return { w, h };
   }
 
@@ -368,6 +507,128 @@
       });
       const gap = l < maxL ? layerGap[l] : 0;
       primaryCursor += layerPrimary + gap;
+    }
+  }
+
+  /* ---------- sequence-diagram layout ----------
+   *
+   * Triggered by `diagram.layout === 'sequence'`. Treats `nodes` as the
+   * row of participants laid out left-to-right at the top, and `edges`
+   * as time-ordered messages stacked top-to-bottom below the
+   * participants. The renderer also draws a vertical "lifeline" under
+   * each participant spanning the entire message column.
+   *
+   * Layout rules:
+   *   - All participants sit at y=0 in declaration order, with a fixed
+   *     gap (PARTICIPANT_GAP) between them.
+   *   - Each edge gets a _seqY slot: messages stack with MESSAGE_GAP
+   *     vertical spacing, starting MESSAGE_TOP below the participant
+   *     row.
+   *   - The lifeline length is the y of the last message + MESSAGE_TOP.
+   *
+   * Edges marked `_sequence: true` in this pass are rendered as straight
+   * horizontal arrows by drawSequenceEdge() rather than orthogonal
+   * polylines. */
+  const PARTICIPANT_GAP = 80;
+  const MESSAGE_GAP     = 48;
+  const MESSAGE_TOP     = 40;
+
+  function sequenceLayout(diagram) {
+    const nodes = diagram.nodes;
+    const edges = diagram.edges || [];
+
+    // 1. Size + place participants in a row.
+    let cursorX = 0;
+    for (const n of nodes) {
+      const { w, h } = autoNodeSize(n);
+      n._w = w; n._h = h;
+      n.x  = cursorX;
+      n.y  = 0;
+      cursorX += w + PARTICIPANT_GAP;
+    }
+    const participantBottom = nodes.reduce((m, n) => Math.max(m, n.y + n._h), 0);
+
+    // 2. Stack edges as time-ordered messages.
+    let yCursor = participantBottom + MESSAGE_TOP;
+    for (const e of edges) {
+      e._sequence = true;
+      e._seqY = yCursor;
+      yCursor += MESSAGE_GAP;
+    }
+    // 3. Lifeline extent — saved on the diagram so the renderer can
+    //    paint them after the participant row is drawn.
+    diagram._lifelineY1 = participantBottom + 8;
+    diagram._lifelineY2 = Math.max(yCursor, participantBottom + MESSAGE_TOP) + 12;
+  }
+
+  function drawLifelines(svg, diagram) {
+    const y1 = diagram._lifelineY1, y2 = diagram._lifelineY2;
+    if (y1 == null || y2 == null) return;
+    const g = $('g', { class: 'qa-lifelines' });
+    svg.insertBefore(g, svg.firstChild);
+    for (const n of diagram.nodes) {
+      const cx = n.x + n._w / 2;
+      $('line', {
+        x1: cx, x2: cx, y1, y2,
+        stroke: '#94a3b8', 'stroke-width': '1.2', 'stroke-dasharray': '4 4',
+      }, g);
+    }
+  }
+
+  function drawSequenceEdge(layer, edge, nodeMap) {
+    const a = nodeMap.get(edge.from), b = nodeMap.get(edge.to);
+    if (!a || !b) return;
+    const ax = a.x + a._w / 2;
+    const bx = b.x + b._w / 2;
+    const y  = edge._seqY;
+
+    // Self-message: render as a small right-going loop on the same lifeline.
+    if (a === b) {
+      const loopW = 60;
+      const d = `M ${ax} ${y} h ${loopW} v ${MESSAGE_GAP * 0.6} h ${-loopW}`;
+      const g = $('g', { class: 'qa-edge qa-seq-edge' }, layer);
+      const style = edge.style || 'solid';
+      const dash = style === 'dashed' ? '6 5' : style === 'dotted' ? '2 4' : null;
+      $('path', {
+        d, fill: 'none', stroke: edge.color || '#475569', 'stroke-width': 1.8,
+        'stroke-dasharray': dash, 'stroke-linecap': 'round',
+        'marker-end': arrowMarker(edge.toArrow || 'arrow') || 'url(#qa-arrow)',
+      }, g);
+      if (edge.label) {
+        const t = $('text', {
+          x: ax + loopW + 6, y: y + MESSAGE_GAP * 0.3,
+          'dominant-baseline': 'middle', fill: '#0f172a',
+          'font-family': "'Inter', system-ui, sans-serif", 'font-size': '11',
+        }, g);
+        t.textContent = edge.label;
+      }
+      return;
+    }
+
+    const g = $('g', { class: 'qa-edge qa-seq-edge' }, layer);
+    const style = edge.style || 'solid';
+    const dash = style === 'dashed' ? '6 5' : style === 'dotted' ? '2 4' : null;
+    $('path', {
+      d: `M ${ax} ${y} L ${bx} ${y}`,
+      fill: 'none', stroke: edge.color || '#475569', 'stroke-width': 1.8,
+      'stroke-dasharray': dash, 'stroke-linecap': 'round',
+      'marker-end': arrowMarker(edge.toArrow || 'arrow') || 'url(#qa-arrow)',
+    }, g);
+    if (edge.label) {
+      const mx = (ax + bx) / 2;
+      const txt = $('text', {
+        x: mx, y: y - 6, 'text-anchor': 'middle',
+        fill: '#0f172a', 'font-family': "'Inter', system-ui, sans-serif",
+        'font-size': '11', 'font-weight': '500',
+      }, g);
+      txt.textContent = edge.label;
+      const bbox = txt.getBBox();
+      const pad = 6;
+      const bg = $('rect', {
+        x: bbox.x - pad, y: bbox.y - 3, width: bbox.width + pad * 2, height: bbox.height + 6,
+        rx: 7, fill: '#ffffff', stroke: '#cbd5e1', 'stroke-width': 1,
+      });
+      g.insertBefore(bg, txt);
     }
   }
 
@@ -674,11 +935,26 @@
     const style = edge.style || 'solid';
     const dash = style === 'dashed' ? '6 5' : style === 'dotted' ? '2 4' : null;
 
+    // Pick markers. `toArrow` / `fromArrow` (added v0.4) override the
+    // legacy `endArrow` / `bidir` flags. The defaults preserve
+    // pre-v0.4 behaviour: solid arrow at the destination, none at the
+    // source unless `bidir` is set.
+    let endMarker, startMarker;
+    if (edge.toArrow !== undefined) {
+      endMarker = arrowMarker(edge.toArrow);
+    } else {
+      endMarker = edge.endArrow === false ? null : 'url(#qa-arrow)';
+    }
+    if (edge.fromArrow !== undefined) {
+      startMarker = arrowMarker(edge.fromArrow);
+    } else {
+      startMarker = edge.bidir ? 'url(#qa-arrow)' : null;
+    }
     $('path', {
       d, fill: 'none', stroke: edge.color || '#475569', 'stroke-width': 1.8,
       'stroke-dasharray': dash, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
-      'marker-end': edge.endArrow === false ? null : 'url(#qa-arrow)',
-      'marker-start': edge.bidir ? 'url(#qa-arrow)' : null,
+      'marker-end':   endMarker,
+      'marker-start': startMarker,
     }, g);
 
     if (edge.label) {
@@ -712,11 +988,16 @@
     }
 
     // Auto-layout when requested. We treat "no node has x or y" as also
-    // implying auto-layout to make the format ergonomic.
-    const wantsAuto = diagram.layout || diagram.nodes.every(n => n.x == null && n.y == null);
-    if (wantsAuto) {
-      if (!diagram.layout) diagram.layout = 'lr';
-      autoLayout(diagram);
+    // implying auto-layout to make the format ergonomic. Sequence
+    // diagrams use a completely different layout function.
+    if (diagram.layout === 'sequence') {
+      sequenceLayout(diagram);
+    } else {
+      const wantsAuto = diagram.layout || diagram.nodes.every(n => n.x == null && n.y == null);
+      if (wantsAuto) {
+        if (!diagram.layout) diagram.layout = 'lr';
+        autoLayout(diagram);
+      }
     }
 
     // Compute viewBox bounds
@@ -727,6 +1008,11 @@
       minY = Math.min(minY, n.y);
       maxX = Math.max(maxX, n.x + n._w);
       maxY = Math.max(maxY, n.y + n._h);
+    }
+    // In sequence layout the lifelines + messages extend well below the
+    // participant row; include the lifeline extent in the bbox.
+    if (diagram.layout === 'sequence' && diagram._lifelineY2 != null) {
+      maxY = Math.max(maxY, diagram._lifelineY2);
     }
     const vbW = (maxX - minX) + padding * 2;
     const vbH = (maxY - minY) + padding * 2;
@@ -749,8 +1035,10 @@
       else drawNode(svg, defs, n);
     }
 
-    // Pre-plan edge offsets for fan-out before drawing
-    if (diagram.edges) planEdgeOffsets(diagram.edges, nodeMap);
+    // Pre-plan edge offsets for fan-out before drawing — except for
+    // sequence diagrams, which use straight horizontal arrows and
+    // don't need orthogonal routing.
+    if (diagram.edges && diagram.layout !== 'sequence') planEdgeOffsets(diagram.edges, nodeMap);
 
     const firstNode = svg.querySelector('.qa-node');
     if (diagram.groups && diagram.groups.length) {
@@ -758,9 +1046,15 @@
       svg.insertBefore(gLayer, firstNode);
       for (const grp of diagram.groups) drawCluster(gLayer, grp, nodeMap);
     }
+    if (diagram.layout === 'sequence') {
+      drawLifelines(svg, diagram);
+    }
     const eLayer = $('g', { class: 'qa-edges' });
     svg.insertBefore(eLayer, firstNode);
-    for (const e of (diagram.edges || [])) drawEdge(eLayer, e, nodeMap);
+    for (const e of (diagram.edges || [])) {
+      if (e._sequence) drawSequenceEdge(eLayer, e, nodeMap);
+      else             drawEdge(eLayer, e, nodeMap);
+    }
 
     return svg;
   }
@@ -1019,7 +1313,7 @@
 
   return {
     render,
-    version: '0.3.2',
+    version: '0.4.0',
     THEMES,
     SHAPES,
     autoLayout,

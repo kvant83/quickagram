@@ -181,7 +181,9 @@
     your browser; <em>Reset</em> reverts to the example's original template.
   </footer>
 
-  <script src="../src/quickagram.js"></script>
+  <!-- cache-buster: bump the query string whenever the engine changes
+       so browsers don't keep using a stale src/quickagram.js -->
+  <script src="../src/quickagram.js?v=0.4.0"></script>
   <script>
     /* ----------------------------------------------------------------
      * Example gallery — each entry is { name, kind, template }.
@@ -463,6 +465,133 @@ WHERE  created_at > NOW() - INTERVAL '1 day'
 ORDER BY created_at DESC
 LIMIT  100;
 \`
+})`,
+      },
+
+      /* ----------------------------------------------------------------
+       * v0.4 — Mermaid-compatibility primitives
+       * ---------------------------------------------------------------- */
+
+      {
+        name: 'v0.4 · Flowchart shapes (Mermaid)',
+        kind: 'render',
+        template: `// Every Mermaid flowchart shape mapped to its Quickagram kind.
+// Source-of-truth converter:  node tools/mermaid-to-quickagram/index.js
+({
+  layout: 'lr',
+  nodes: [
+    { id: 'rect',  kind: 'plain',            label: '[rectangle]'   },
+    { id: 'circ',  kind: 'circle',           label: '((circle))'    },
+    { id: 'stad',  kind: 'stadium',          label: '([stadium])'   },
+    { id: 'diam',  kind: 'diamond',          label: '{diamond}'     },
+    { id: 'hex',   kind: 'lb',               label: '{{hexagon}}'   },
+    { id: 'cyl',   kind: 'db',               label: '[(cylinder)]'  },
+    { id: 'par',   kind: 'parallelogram',    label: '[/parallel/]'  },
+    { id: 'parA',  kind: 'parallelogramAlt', label: '[\\\\parallel\\\\]' },
+    { id: 'trap',  kind: 'trapezoid',        label: '[/trap\\\\]'    },
+    { id: 'trapA', kind: 'trapezoidAlt',     label: '[\\\\trap/]'    },
+  ],
+  edges: [],
+})`,
+      },
+
+      {
+        name: 'v0.4 · stateDiagram ([*] start/end markers)',
+        kind: 'render',
+        template: `// Converted from Mermaid:
+//
+//   stateDiagram-v2
+//       [*] --> Still
+//       Still --> [*]
+//       Still --> Moving
+//       Moving --> Still
+//       Moving --> Crash
+//       Crash --> [*]
+//
+// [*] is a SINGLETON per scope — Still and Crash both terminate
+// at the same __end__ node (one ringed circle), not at separate ones.
+({
+  layout: 'lr',
+  nodes: [
+    { id: '__start__', kind: 'start', label: '' },
+    { id: 'Still',     kind: 'state', label: 'Still'  },
+    { id: 'Moving',    kind: 'state', label: 'Moving' },
+    { id: 'Crash',     kind: 'state', label: 'Crash'  },
+    { id: '__end__',   kind: 'end',   label: '' },
+  ],
+  edges: [
+    { from: '__start__', to: 'Still'   },
+    { from: 'Still',     to: '__end__' },
+    { from: 'Still',     to: 'Moving'  },
+    { from: 'Moving',    to: 'Still'   },
+    { from: 'Moving',    to: 'Crash'   },
+    { from: 'Crash',     to: '__end__' },
+  ],
+})`,
+      },
+
+      {
+        name: 'v0.4 · classDiagram (UML arrow markers)',
+        kind: 'render',
+        template: `// Converted from Mermaid:
+//
+//   classDiagram
+//       Animal <|-- Duck
+//       Animal <|-- Fish
+//       class Animal { +int age; +String gender; +isMammal(); +mate() }
+//       class Duck   { +String beakColor; +swim(); +quack() }
+//       Owner "1" --> "*" Pet : owns
+//
+// fromArrow: 'triangle' = open triangle at parent end (inheritance)
+// fromArrow: 'diamond'  = filled rhombus at composite (composition)
+// fromArrow: 'odiamond' = open rhombus  at aggregate (aggregation)
+({
+  layout: 'lr',
+  nodes: [
+    { id: 'Animal', kind: 'class', label: 'Animal',
+      attrs:   ['+int age', '+String gender'],
+      methods: ['+isMammal()', '+mate()'] },
+    { id: 'Duck',  kind: 'class', label: 'Duck',
+      attrs: ['+String beakColor'], methods: ['+swim()', '+quack()'] },
+    { id: 'Fish',  kind: 'class', label: 'Fish' },
+    { id: 'Owner', kind: 'class', label: 'Owner' },
+    { id: 'Pet',   kind: 'class', label: 'Pet'   },
+  ],
+  edges: [
+    { from: 'Animal', to: 'Duck', toArrow: 'none', fromArrow: 'triangle' },
+    { from: 'Animal', to: 'Fish', toArrow: 'none', fromArrow: 'triangle' },
+    { from: 'Owner',  to: 'Pet',  label: '"1" owns "*"' },
+  ],
+})`,
+      },
+
+      {
+        name: 'v0.4 · sequenceDiagram (lifelines + messages)',
+        kind: 'render',
+        template: `// Converted from Mermaid:
+//
+//   sequenceDiagram
+//       Alice ->> John:  Hello John, how are you?
+//       Alice ->> John:  John, can you hear me?
+//       John  -->> Alice: Hi Alice, I can hear you!
+//       John  -->> Alice: I feel great!
+//
+// layout: 'sequence' lays participants in a row, drops a dashed
+// vertical lifeline under each, and stacks messages as straight
+// horizontal arrows in declaration order. style: 'dashed' marks
+// response messages (Mermaid '-->>').
+({
+  layout: 'sequence',
+  nodes: [
+    { id: 'Alice', kind: 'participant', label: 'Alice' },
+    { id: 'John',  kind: 'participant', label: 'John'  },
+  ],
+  edges: [
+    { from: 'Alice', to: 'John',  label: 'Hello John, how are you?' },
+    { from: 'Alice', to: 'John',  label: 'John, can you hear me?'   },
+    { from: 'John',  to: 'Alice', label: 'Hi Alice, I can hear you!', style: 'dashed' },
+    { from: 'John',  to: 'Alice', label: 'I feel great!',              style: 'dashed' },
+  ],
 })`,
       },
     ];
