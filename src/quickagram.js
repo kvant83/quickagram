@@ -235,13 +235,33 @@
       n._w = w; n._h = h;
     }
 
-    // 2. Build adjacency
+    // 2. Build adjacency. First find cycle-creating "back-edges" via DFS
+    //    in declaration order, then exclude them from the layering graph so
+    //    longest-path doesn't run away. Back-edges are still drawn — they
+    //    just don't influence layer assignment.
+    const fwdAdj = new Map(nodes.map(n => [n.id, []]));
+    for (const e of edges) {
+      if (nodeMap.has(e.from) && nodeMap.has(e.to)) fwdAdj.get(e.from).push(e.to);
+    }
+    const WHITE = 0, GRAY = 1, BLACK = 2;
+    const color = new Map(nodes.map(n => [n.id, WHITE]));
+    const backEdges = new Set(); // keys: "from|to"
+    function dfs(id) {
+      color.set(id, GRAY);
+      for (const nxt of fwdAdj.get(id)) {
+        const c = color.get(nxt);
+        if (c === GRAY) backEdges.add(id + '|' + nxt);
+        else if (c === WHITE) dfs(nxt);
+      }
+      color.set(id, BLACK);
+    }
+    for (const n of nodes) if (color.get(n.id) === WHITE) dfs(n.id);
+
     const out = new Map(), inc = new Map();
     for (const n of nodes) { out.set(n.id, []); inc.set(n.id, []); }
     for (const e of edges) {
       if (!nodeMap.has(e.from) || !nodeMap.has(e.to)) continue;
-      // Treat back-edges as forward for layering purposes — they get drawn
-      // anyway but don't influence layering (would create cycles).
+      if (backEdges.has(e.from + '|' + e.to)) continue; // skip for layering
       out.get(e.from).push(e.to);
       inc.get(e.to).push(e.from);
     }
@@ -999,7 +1019,7 @@
 
   return {
     render,
-    version: '0.3.0',
+    version: '0.3.1',
     THEMES,
     SHAPES,
     autoLayout,

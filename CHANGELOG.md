@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] — handle cycles in auto-layout
+
+### Fixed
+- Auto-layout no longer blows up on diagrams with cycles. The longest-path layerer was running away when an edge pointed back to an earlier node (e.g. a feedback loop `Step 4 → Benchmark → Step 2`), pushing later nodes into column 12000+ before the 30-iteration safety guard kicked in.
+- Now: a DFS in declaration order identifies cycle-creating "back-edges"; those are excluded from the layering graph so layers stay sensible. Back-edges still appear in the rendered diagram — they just don't influence column placement.
+
 ## [0.3.0] — syntax highlighting
 
 ### Added
