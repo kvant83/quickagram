@@ -818,16 +818,69 @@
     }
   }
 
-  function buildPolyline(p1, s1, p2, s2) {
+  /* Find nodes that obstruct the rectangular routing band between two
+   * points, excluding the source and target nodes themselves. Returns
+   * the obstacles' y-span so the caller can detour above or below. */
+  function findRoutingObstacles(p1, p2, nodeMap, source, target) {
+    if (!nodeMap) return null;
+    const xMin = Math.min(p1[0], p2[0]);
+    const xMax = Math.max(p1[0], p2[0]);
+    const yMin = Math.min(p1[1], p2[1]);
+    const yMax = Math.max(p1[1], p2[1]);
+    let topY = Infinity, botY = -Infinity, count = 0;
+    for (const n of nodeMap.values()) {
+      if (n === source || n === target) continue;
+      // overlap on X (with a small slack so a node that's exactly at
+      // the band edge isn't counted)
+      if (n.x + n._w <= xMin + 1 || n.x >= xMax - 1) continue;
+      // node's y-band must intersect the routing band (with margin)
+      const margin = 4;
+      if (n.y + n._h <= yMin - margin) continue;
+      if (n.y         >= yMax + margin) continue;
+      topY = Math.min(topY, n.y);
+      botY = Math.max(botY, n.y + n._h);
+      count++;
+    }
+    return count ? { topY, botY, count } : null;
+  }
+
+  function buildPolyline(p1, s1, p2, s2, ctx) {
     const [x1, y1] = p1, [x2, y2] = p2;
-    const out = [[x1, y1]];
     const stub = 18;
     const ex = s => s === 'right' ? [x1 + stub, y1] : s === 'left' ? [x1 - stub, y1] : s === 'bottom' ? [x1, y1 + stub] : [x1, y1 - stub];
     const en = s => s === 'right' ? [x2 + stub, y2] : s === 'left' ? [x2 - stub, y2] : s === 'bottom' ? [x2, y2 + stub] : [x2, y2 - stub];
     const a = ex(s1), b = en(s2);
-    out.push(a);
     const horiz1 = s1 === 'left' || s1 === 'right';
     const horiz2 = s2 === 'left' || s2 === 'right';
+
+    /* Obstacle-aware routing for horizontal-to-horizontal edges. The
+     * default mid-X bend produces a STRAIGHT horizontal line whenever
+     * source and target lie at the same y, which then plows through
+     * any nodes sitting in the columns between them. Detect that case
+     * and detour over or under the obstacles. */
+    if (horiz1 && horiz2 && ctx && ctx.nodeMap) {
+      const obs = findRoutingObstacles(a, b, ctx.nodeMap, ctx.source, ctx.target);
+      if (obs) {
+        const margin = 22;
+        const ay = a[1], by = b[1];
+        const detourUp   = Math.min(ay, by) - (obs.topY - margin);  // dist to climb over the top
+        const detourDown = (obs.botY + margin) - Math.max(ay, by);  // dist to dip under the bottom
+        const detourY = detourUp <= detourDown
+          ? obs.topY - margin     // route over
+          : obs.botY + margin;    // route under
+        return [
+          [x1, y1],
+          a,
+          [a[0], detourY],
+          [b[0], detourY],
+          b,
+          [x2, y2],
+        ];
+      }
+    }
+
+    const out = [[x1, y1]];
+    out.push(a);
     if (horiz1 && horiz2) {
       const midX = (a[0] + b[0]) / 2;
       out.push([midX, a[1]], [midX, b[1]]);
@@ -928,7 +981,7 @@
     const toOff   = edge._toOff   != null ? edge._toOff   : (edge.toOffset   || 0);
     const p1 = sidePoint(a, fs, fromOff);
     const p2 = sidePoint(b, ts, toOff);
-    const pts = buildPolyline(p1, fs, p2, ts);
+    const pts = buildPolyline(p1, fs, p2, ts, { nodeMap, source: a, target: b });
     const d = smoothPath(pts, 10);
 
     const g = $('g', { class: 'qa-edge' }, layer);
@@ -1313,7 +1366,7 @@
 
   return {
     render,
-    version: '0.4.0',
+    version: '0.4.1',
     THEMES,
     SHAPES,
     autoLayout,

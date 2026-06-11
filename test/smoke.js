@@ -436,6 +436,54 @@ t('circle / diamond kinds get a SQUARE bbox so arrows land on visible body', () 
   }
 });
 
+t('long-span horizontal edge detours over intermediate nodes (no plowing-through)', () => {
+  // Reproduces the state-diagram routing bug: Still→__end__ used to
+  // render as a straight horizontal line cutting through Moving and
+  // Crash in the columns between. The detour should now route over
+  // (or under) the intermediate nodes.
+  const d = {
+    layout: 'lr',
+    nodes: [
+      { id: 'start',  kind: 'plain', label: 'Start' },
+      { id: 'Still',  kind: 'plain', label: 'Still' },
+      { id: 'Moving', kind: 'plain', label: 'Moving' },
+      { id: 'Crash',  kind: 'plain', label: 'Crash' },
+      { id: 'End',    kind: 'plain', label: 'End' },
+    ],
+    edges: [
+      { from: 'start',  to: 'Still'  },
+      { from: 'Still',  to: 'Moving' },
+      { from: 'Moving', to: 'Crash'  },
+      { from: 'Crash',  to: 'End'    },
+      { from: 'Still',  to: 'End'    },          // ← the problematic long-span edge
+    ],
+  };
+  const { container } = render(d);
+  const svg = container.children[0];
+  const stillNode  = d.nodes.find(n => n.id === 'Still');
+  const movingNode = d.nodes.find(n => n.id === 'Moving');
+  const crashNode  = d.nodes.find(n => n.id === 'Crash');
+
+  // Find the Still→End edge path. The 5th edge by declaration order.
+  const edges = svg.querySelectorAll('.qa-edge');
+  const longSpan = edges[4];                     // declaration order preserved
+  const path = longSpan.children.find(c => c.tag === 'path');
+  const d_attr = path.attrs.d;
+
+  // Extract every y-coordinate from the path. For an obstacle-avoiding
+  // detour at least one y must be ABOVE all obstacle tops (or BELOW
+  // all obstacle bottoms) by the detour margin.
+  const ys = (d_attr.match(/-?\d+(?:\.\d+)?/g) || [])
+    .map(Number).filter((_, i) => i % 2 === 1);   // odd indices = y in "x y" pairs
+  const obsTop = Math.min(movingNode.y, crashNode.y);
+  const obsBot = Math.max(movingNode.y + movingNode._h, crashNode.y + crashNode._h);
+  const goesOver  = ys.some(y => y < obsTop - 4);
+  const goesUnder = ys.some(y => y > obsBot + 4);
+  assert.ok(goesOver || goesUnder,
+    'edge from Still→End must detour over/under Moving+Crash; ys=' + JSON.stringify(ys) +
+    ' obstacle band ' + obsTop + '..' + obsBot);
+});
+
 section('v0.4: new edge arrows');
 t('ensureDefs creates all 6 markers', () => {
   const { container } = render({
