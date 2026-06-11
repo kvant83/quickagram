@@ -745,11 +745,269 @@
     return svg;
   }
 
+  /* ========================================================================
+   *  Syntax highlighting
+   *  -------------------------------------------------------------------
+   *  Quickagram.highlight(code, language) → HTML string with token spans.
+   *  Each token is wrapped in a <span class="qa-tok qa-tok-<type>">; pair
+   *  with one of the bundled themes via `installTheme(name)` or by writing
+   *  your own CSS targeting `.qa-tok-*`.
+   *
+   *  Built-in languages:  python | javascript | js | sql | text
+   *  Built-in themes:     dracula | nord | github-light
+   * ====================================================================== */
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  const LANGUAGES = {
+    python: {
+      lineComment: '#',
+      strings: [`"""`, `'''`, `"`, `'`],
+      keywords: ['def','class','if','else','elif','for','while','in','not','and','or','True','False','None','return','import','from','as','with','try','except','finally','raise','yield','lambda','pass','break','continue','global','nonlocal','assert','del','is','async','await','self','super','cls'],
+      builtins: ['print','len','range','int','str','float','list','dict','set','tuple','bool','type','isinstance','enumerate','zip','map','filter','sum','min','max','abs','open','sorted','reversed','any','all','iter','next','hasattr','getattr','setattr','property','staticmethod','classmethod','repr','format','round','divmod','sys','os','re','collections','deque','defaultdict','OrderedDict','Counter','heapq','itertools','functools','json','time','datetime','math','random','abstractmethod','ABCMeta','Enum'],
+    },
+    javascript: {
+      lineComment: '//',
+      blockComment: ['/*', '*/'],
+      strings: ['`', '"', "'"],
+      keywords: ['var','let','const','function','return','if','else','for','while','do','switch','case','break','continue','default','class','extends','new','this','super','import','export','from','as','default','try','catch','finally','throw','typeof','instanceof','in','of','delete','void','null','undefined','true','false','async','await','yield','static','get','set'],
+      builtins: ['console','log','warn','error','document','window','globalThis','Math','Date','JSON','Object','Array','String','Number','Boolean','Map','Set','WeakMap','WeakSet','Promise','Symbol','Error','TypeError','RangeError','RegExp','parseInt','parseFloat','isNaN','isFinite','encodeURI','decodeURI','encodeURIComponent','decodeURIComponent','setTimeout','setInterval','clearTimeout','clearInterval','fetch','require','module','exports'],
+    },
+    sql: {
+      lineComment: '--',
+      blockComment: ['/*', '*/'],
+      strings: [`'`, `"`],
+      caseInsensitive: true,
+      keywords: ['SELECT','FROM','WHERE','GROUP','BY','ORDER','HAVING','LIMIT','OFFSET','JOIN','INNER','OUTER','LEFT','RIGHT','FULL','ON','AS','AND','OR','NOT','IN','BETWEEN','LIKE','IS','NULL','DISTINCT','UNION','ALL','CREATE','TABLE','PRIMARY','KEY','FOREIGN','INDEX','UNIQUE','CONSTRAINT','REFERENCES','DEFAULT','INSERT','INTO','VALUES','UPDATE','SET','DELETE','DROP','ALTER','ADD','COLUMN','RENAME','TRUNCATE','BEGIN','COMMIT','ROLLBACK','TRANSACTION','IF','EXISTS','CASE','WHEN','THEN','ELSE','END','WITH','RETURNING','GRANT','REVOKE'],
+      types: ['INT','INTEGER','BIGINT','SMALLINT','VARCHAR','CHAR','TEXT','BLOB','BYTEA','DATE','DATETIME','TIMESTAMP','TIME','BOOLEAN','BOOL','DECIMAL','NUMERIC','FLOAT','DOUBLE','REAL','JSON','JSONB','UUID','SERIAL','BIGSERIAL'],
+    },
+    text: {},
+  };
+  LANGUAGES.js = LANGUAGES.javascript;
+  LANGUAGES.py = LANGUAGES.python;
+
+  function tokenize(code, lang) {
+    const out = [];
+    const n = code.length;
+    let i = 0;
+    const sortedStrs = lang.strings ? [...lang.strings].sort((a, b) => b.length - a.length) : null;
+    const kwSet = lang.keywords ? new Set(lang.caseInsensitive ? lang.keywords.map(k => k.toUpperCase()) : lang.keywords) : null;
+    const typeSet = lang.types ? new Set(lang.caseInsensitive ? lang.types.map(t => t.toUpperCase()) : lang.types) : null;
+    const builtinSet = lang.builtins ? new Set(lang.builtins) : null;
+
+    while (i < n) {
+      const ch = code[i];
+
+      // whitespace
+      if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
+        let j = i;
+        while (j < n && (code[j] === ' ' || code[j] === '\t' || code[j] === '\n' || code[j] === '\r')) j++;
+        out.push({ t: 'ws', v: code.slice(i, j) });
+        i = j;
+        continue;
+      }
+
+      // line comment
+      if (lang.lineComment && code.startsWith(lang.lineComment, i)) {
+        let j = i;
+        while (j < n && code[j] !== '\n') j++;
+        out.push({ t: 'comment', v: code.slice(i, j) });
+        i = j;
+        continue;
+      }
+
+      // block comment
+      if (lang.blockComment && code.startsWith(lang.blockComment[0], i)) {
+        const end = code.indexOf(lang.blockComment[1], i + lang.blockComment[0].length);
+        const j = end === -1 ? n : end + lang.blockComment[1].length;
+        out.push({ t: 'comment', v: code.slice(i, j) });
+        i = j;
+        continue;
+      }
+
+      // string (longest delimiter first → "" before " in JS, """ before " in Py)
+      if (sortedStrs) {
+        let q = null;
+        for (const s of sortedStrs) {
+          if (code.startsWith(s, i)) { q = s; break; }
+        }
+        if (q) {
+          const start = i;
+          i += q.length;
+          while (i < n) {
+            if (code[i] === '\\' && i + 1 < n) { i += 2; continue; }
+            if (code.startsWith(q, i)) { i += q.length; break; }
+            if (code[i] === '\n' && q.length === 1) break; // unterminated single-line string
+            i++;
+          }
+          out.push({ t: 'string', v: code.slice(start, i) });
+          continue;
+        }
+      }
+
+      // number (int, float, hex, scientific)
+      if ((ch >= '0' && ch <= '9') || (ch === '.' && i + 1 < n && code[i + 1] >= '0' && code[i + 1] <= '9')) {
+        let j = i;
+        // hex
+        if (ch === '0' && i + 1 < n && (code[i + 1] === 'x' || code[i + 1] === 'X')) {
+          j = i + 2;
+          while (j < n && /[0-9a-fA-F_]/.test(code[j])) j++;
+        } else {
+          while (j < n && /[0-9._]/.test(code[j])) j++;
+          if (j < n && (code[j] === 'e' || code[j] === 'E')) {
+            j++;
+            if (j < n && (code[j] === '+' || code[j] === '-')) j++;
+            while (j < n && /[0-9]/.test(code[j])) j++;
+          }
+        }
+        out.push({ t: 'number', v: code.slice(i, j) });
+        i = j;
+        continue;
+      }
+
+      // identifier / keyword / type / builtin / class / function
+      if (/[a-zA-Z_$]/.test(ch)) {
+        let j = i;
+        while (j < n && /[a-zA-Z0-9_$]/.test(code[j])) j++;
+        const word = code.slice(i, j);
+        const cmp = lang.caseInsensitive ? word.toUpperCase() : word;
+        let type = 'ident';
+        if (kwSet && kwSet.has(cmp)) type = 'keyword';
+        else if (typeSet && typeSet.has(cmp)) type = 'type';
+        else if (builtinSet && builtinSet.has(word)) type = 'builtin';
+        else if (/^[A-Z]/.test(word)) type = 'class';
+        else if (j < n && code[j] === '(') type = 'function';
+        out.push({ t: type, v: word });
+        i = j;
+        continue;
+      }
+
+      // decorator (Python) / attribute (JS) — keep '@' as its own punct
+      if (ch === '@') {
+        out.push({ t: 'decorator', v: '@' });
+        i++;
+        continue;
+      }
+
+      // multi-char operator
+      if (/[+\-*/%=<>!&|^~?]/.test(ch)) {
+        let j = i;
+        while (j < n && /[+\-*/%=<>!&|^~?]/.test(code[j])) j++;
+        out.push({ t: 'operator', v: code.slice(i, j) });
+        i = j;
+        continue;
+      }
+
+      // single-char punct
+      if (/[(){}\[\];,.:]/.test(ch)) {
+        out.push({ t: 'punct', v: ch });
+        i++;
+        continue;
+      }
+
+      // fallback
+      out.push({ t: 'ident', v: ch });
+      i++;
+    }
+
+    return out;
+  }
+
+  function highlight(code, opts) {
+    const langName = typeof opts === 'string' ? opts : (opts && opts.language) || 'text';
+    const lang = LANGUAGES[langName] || LANGUAGES.text;
+    if (!lang.keywords && !lang.strings && !lang.lineComment) {
+      // unknown / text → just escape
+      return escapeHtml(code);
+    }
+    const tokens = tokenize(code, lang);
+    let out = '';
+    for (const tok of tokens) {
+      if (tok.t === 'ws') { out += escapeHtml(tok.v); continue; }
+      out += '<span class="qa-tok qa-tok-' + tok.t + '">' + escapeHtml(tok.v) + '</span>';
+    }
+    return out;
+  }
+
+  /* ---------- bundled themes — CSS strings ---------- */
+  const CODE_THEMES = {
+    dracula: [
+      '.qa-code{background:#282a36;color:#f8f8f2;font-family:"JetBrains Mono","SF Mono",Menlo,monospace;font-size:12.5px;line-height:1.55;padding:14px 18px;border-radius:10px;overflow-x:auto;white-space:pre}',
+      '.qa-code .qa-tok-comment{color:#6272a4;font-style:italic}',
+      '.qa-code .qa-tok-keyword{color:#ff79c6;font-weight:600}',
+      '.qa-code .qa-tok-string {color:#f1fa8c}',
+      '.qa-code .qa-tok-number {color:#bd93f9}',
+      '.qa-code .qa-tok-builtin{color:#8be9fd;font-style:italic}',
+      '.qa-code .qa-tok-class  {color:#50fa7b}',
+      '.qa-code .qa-tok-function{color:#50fa7b}',
+      '.qa-code .qa-tok-type   {color:#8be9fd}',
+      '.qa-code .qa-tok-operator{color:#ff79c6}',
+      '.qa-code .qa-tok-decorator{color:#f1fa8c;font-style:italic}',
+      '.qa-code .qa-tok-punct  {color:#f8f8f2}',
+      '.qa-code .qa-tok-ident  {color:#f8f8f2}',
+    ].join(''),
+
+    nord: [
+      '.qa-code{background:#2e3440;color:#d8dee9;font-family:"JetBrains Mono","SF Mono",Menlo,monospace;font-size:12.5px;line-height:1.55;padding:14px 18px;border-radius:10px;overflow-x:auto;white-space:pre}',
+      '.qa-code .qa-tok-comment{color:#4c566a;font-style:italic}',
+      '.qa-code .qa-tok-keyword{color:#81a1c1;font-weight:600}',
+      '.qa-code .qa-tok-string {color:#a3be8c}',
+      '.qa-code .qa-tok-number {color:#b48ead}',
+      '.qa-code .qa-tok-builtin{color:#88c0d0;font-style:italic}',
+      '.qa-code .qa-tok-class  {color:#8fbcbb}',
+      '.qa-code .qa-tok-function{color:#88c0d0}',
+      '.qa-code .qa-tok-type   {color:#8fbcbb}',
+      '.qa-code .qa-tok-operator{color:#81a1c1}',
+      '.qa-code .qa-tok-decorator{color:#ebcb8b;font-style:italic}',
+      '.qa-code .qa-tok-punct  {color:#eceff4}',
+      '.qa-code .qa-tok-ident  {color:#d8dee9}',
+    ].join(''),
+
+    'github-light': [
+      '.qa-code{background:#f6f8fa;color:#24292e;border:1px solid #e1e4e8;font-family:"JetBrains Mono","SF Mono",Menlo,monospace;font-size:12.5px;line-height:1.55;padding:14px 18px;border-radius:10px;overflow-x:auto;white-space:pre}',
+      '.qa-code .qa-tok-comment{color:#6a737d;font-style:italic}',
+      '.qa-code .qa-tok-keyword{color:#d73a49;font-weight:600}',
+      '.qa-code .qa-tok-string {color:#032f62}',
+      '.qa-code .qa-tok-number {color:#005cc5}',
+      '.qa-code .qa-tok-builtin{color:#6f42c1}',
+      '.qa-code .qa-tok-class  {color:#6f42c1}',
+      '.qa-code .qa-tok-function{color:#6f42c1}',
+      '.qa-code .qa-tok-type   {color:#005cc5}',
+      '.qa-code .qa-tok-operator{color:#d73a49}',
+      '.qa-code .qa-tok-decorator{color:#e36209;font-style:italic}',
+      '.qa-code .qa-tok-punct  {color:#24292e}',
+      '.qa-code .qa-tok-ident  {color:#24292e}',
+    ].join(''),
+  };
+
+  function installTheme(name) {
+    if (typeof document === 'undefined') return false;
+    const id = 'qa-code-theme-' + name;
+    if (document.getElementById(id)) return true;
+    const css = CODE_THEMES[name];
+    if (!css) return false;
+    const style = document.createElement('style');
+    style.id = id;
+    style.textContent = css;
+    document.head.appendChild(style);
+    return true;
+  }
+
   return {
     render,
-    version: '0.2.2',
+    version: '0.3.0',
     THEMES,
     SHAPES,
-    autoLayout, // exported for advanced use
+    autoLayout,
+    // syntax highlighting
+    highlight,
+    tokenize,
+    languages: LANGUAGES,
+    codeThemes: CODE_THEMES,
+    installTheme,
   };
 }));

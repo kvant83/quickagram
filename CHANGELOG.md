@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — syntax highlighting
+
+### Added
+- **`Quickagram.highlight(code, language)`** — tokeniser + HTML emitter for embedding coloured code blocks. Returns a string of HTML where each token is wrapped in `<span class="qa-tok qa-tok-<type>">`.
+- **`Quickagram.tokenize(code, langConfig)`** — lower-level API, returns `{t, v}[]` tokens you can render however you like.
+- **`Quickagram.languages`** — bundled language configs: `python` (alias `py`), `javascript` (alias `js`), `sql`, `text` (no-op). Each declares keywords / builtins / types, comment + string delimiters, optional case-insensitivity. Add your own by mutating the object.
+- **`Quickagram.codeThemes`** — bundled CSS theme strings: `dracula`, `nord`, `github-light`. Apply by wrapping your `<pre>` in `class="qa-code"` and including the theme CSS.
+- **`Quickagram.installTheme(name)`** — convenience helper that injects a theme\'s CSS into `<head>` once. Returns true if applied.
+
+### Notes
+- Tokeniser is regex-based and handles: line + block comments, single / double / triple-quoted strings (with escapes), numbers (int / float / hex / scientific), keywords, types, builtins, capitalised identifiers (treated as classes), function calls, decorators (`@`), multi-char operators, punctuation. Sufficient for displaying interview-style code snippets; not a replacement for tree-sitter or Lezer for editor use.
+
 ## [0.2.2] — more generous label gap
 
 ### Fixed
