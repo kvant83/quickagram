@@ -124,6 +124,24 @@ Modern evergreen browsers (Chrome, Firefox, Safari, Edge). Uses SVG, ES2017 feat
 
 Quickagram follows [SemVer](https://semver.org). Until 1.0, expect breaking changes; pin to an exact version in production.
 
+## Playground
+
+Open [`test/index.html`](test/index.html) directly in a browser for a live playground — 11 prebuilt examples covering every engine capability, with an editable template on the left and a live-rendered diagram on the right (300 ms debounce; edits auto-save to `localStorage`).
+
+```sh
+open test/index.html        # macOS
+xdg-open test/index.html    # Linux
+# or serve and visit:
+python3 -m http.server 8765 && open http://localhost:8765/test/
+```
+
+## Tests
+
+```sh
+node test/smoke.js    # 28 assertions: API, shapes, layout, sizing, contrast, highlight, themes
+# or: npm test
+```
+
 ## Contributing
 
 Issues and PRs welcome at https://github.com/kvant83/quickagram. `npm test` runs a lightweight smoke test of the public API; render correctness is verified manually via the files in `examples/`.

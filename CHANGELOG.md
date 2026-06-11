@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] — test suite + interactive playground
+
+### Added
+- **`test/index.html`** — interactive playground. Pick from 11 prebuilt examples (three-tier app, every node kind, top-to-bottom layout, fan-out, cycle / feedback loop, edge styles, UML class diagram, async pipeline, explicit layer hints, Python highlight, SQL highlight); edit the template on the left, see it re-render on the right with a 300 ms debounce. Auto-saves edits to `localStorage`; Reset reverts to the original example.
+- **`test/smoke.js`** rewritten as a real test suite — **28 assertions** across 9 sections: API surface, themes / shapes, auto-layout (chain / fan-out / cycle / TB / layer-hint), auto node sizing, edge-label gap, render output, text contrast, syntax highlighting (python / js / sql / text / unknown), theme installation.
+- Run with `npm test` (or `node test/smoke.js`); open `test/index.html` directly in a browser to use the playground.
+
 ## [0.3.1] — handle cycles in auto-layout
 
 ### Fixed

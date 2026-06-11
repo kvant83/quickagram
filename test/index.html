@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quickagram Playground</title>
+  <meta name="description" content="Try every Quickagram capability live — edit the template on the left, see the rendered diagram on the right.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #ffffff;
+      --ink: #0f172a;
+      --ink-soft: #475569;
+      --muted: #94a3b8;
+      --line: #e2e8f0;
+      --accent: #6366f1;
+      --ok: #10b981;
+      --err: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
+        radial-gradient(900px 500px at -10% 10%, rgba(139, 92, 246, 0.15), transparent 60%),
+        linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    header {
+      padding: 14px 24px;
+      backdrop-filter: blur(12px);
+      background: rgba(11, 18, 32, 0.6);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      display: flex; align-items: center; gap: 18px;
+    }
+    header .brand {
+      display: flex; align-items: center; gap: 10px;
+      color: #fff; text-decoration: none; font-weight: 700;
+    }
+    header .logo {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: linear-gradient(135deg, #818cf8, #c084fc);
+      display: grid; place-items: center; color: #fff; font-weight: 800;
+    }
+    header .title { font-size: 15px; }
+    header .subtitle { font-size: 12px; color: var(--muted); font-weight: 500; }
+    header .controls { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    header select, header button {
+      font: inherit;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    header button:hover { background: rgba(255,255,255,0.12); }
+    header a.repo {
+      color: #cbd5e1; text-decoration: none; font-size: 13px;
+      padding: 6px 12px; border-radius: 8px;
+    }
+    header a.repo:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: rgba(148, 163, 184, 0.15);
+      flex: 1; min-height: 0;
+    }
+    .pane {
+      background: var(--panel);
+      display: flex; flex-direction: column;
+      min-width: 0;
+    }
+    .pane-head {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--ink-soft);
+    }
+    .pane-head .status {
+      margin-left: auto; font-weight: 500; text-transform: none;
+      letter-spacing: 0; color: var(--muted);
+    }
+    .pane-head .status.ok  { color: var(--ok); }
+    .pane-head .status.err { color: var(--err); }
+    #editor {
+      flex: 1; min-height: 0;
+      font: 13px/1.55 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+      padding: 14px 18px;
+      border: 0; outline: 0; resize: none;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      tab-size: 2;
+    }
+    #preview {
+      flex: 1; min-height: 0; overflow: auto;
+      padding: 24px;
+      background: #fafafa;
+    }
+    #preview .err {
+      color: var(--err);
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', Menlo, monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    footer {
+      padding: 10px 24px;
+      color: var(--muted); font-size: 12px;
+      background: rgba(11, 18, 32, 0.5);
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    footer code { color: #cbd5e1; }
+
+    /* dracula theme for the highlight example */
+    .qa-code {
+      background: #282a36; color: #f8f8f2;
+      font-family: 'JetBrains Mono', Menlo, monospace; font-size: 12.5px; line-height: 1.55;
+      padding: 14px 18px; border-radius: 10px; overflow-x: auto; white-space: pre;
+    }
+    .qa-code .qa-tok-keyword { color: #ff79c6; font-weight: 600; }
+    .qa-code .qa-tok-string  { color: #f1fa8c; }
+    .qa-code .qa-tok-number  { color: #bd93f9; }
+    .qa-code .qa-tok-comment { color: #6272a4; font-style: italic; }
+    .qa-code .qa-tok-builtin { color: #8be9fd; font-style: italic; }
+    .qa-code .qa-tok-class   { color: #50fa7b; }
+    .qa-code .qa-tok-function{ color: #50fa7b; }
+    .qa-code .qa-tok-type    { color: #8be9fd; }
+    .qa-code .qa-tok-operator{ color: #ff79c6; }
+    .qa-code .qa-tok-punct, .qa-code .qa-tok-ident { color: #f8f8f2; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="../README.md">
+      <div class="logo">Q</div>
+      <div>
+        <div class="title">Quickagram Playground</div>
+        <div class="subtitle">Edit the template on the left → see it render on the right</div>
+      </div>
+    </a>
+    <div class="controls">
+      <select id="example-picker"></select>
+      <button id="reset">Reset</button>
+      <a class="repo" href="https://github.com/kvant83/quickagram" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="pane">
+      <div class="pane-head">
+        Template
+        <span class="status" id="editor-status">type to render…</span>
+      </div>
+      <textarea id="editor" spellcheck="false" autocomplete="off"></textarea>
+    </section>
+    <section class="pane">
+      <div class="pane-head">
+        Rendered
+        <span class="status" id="preview-status"></span>
+      </div>
+      <div id="preview"></div>
+    </section>
+  </main>
+
+  <footer>
+    Templates use JavaScript object-literal syntax. The whole template is
+    evaluated as <code>return ({ ... })</code>. Changes are auto-saved to
+    your browser; <em>Reset</em> reverts to the example's original template.
+  </footer>
+
+  <script src="../src/quickagram.js"></script>
+  <script>
+    /* ----------------------------------------------------------------
+     * Example gallery — each entry is { name, kind, template }.
+     *
+     * kind: 'render' → template is a Quickagram diagram, passed to
+     *                  Quickagram.render(container, diagram).
+     *       'highlight' → template is { code, language }, passed to
+     *                  Quickagram.highlight(code, language) and
+     *                  wrapped in <pre class="qa-code">.
+     * ---------------------------------------------------------------- */
+
+    const examples = [
+      {
+        name: '1 · Three-tier web app',
+        kind: 'render',
+        template: `// Auto-layout: omit x/y and Quickagram lays nodes out by longest path.
+({
+  nodes: [
+    { id: 'client', kind: 'client', label: 'Client' },
+    { id: 'lb',     kind: 'lb',     label: 'Load Balancer' },
+    { id: 'web',    kind: 'web',    label: 'Web Servers', sub: '×N' },
+    { id: 'api',    kind: 'api',    label: 'API Servers', sub: '×N' },
+    { id: 'cache',  kind: 'cache',  label: 'Redis' },
+    { id: 'db',     kind: 'db',     label: 'PostgreSQL' },
+  ],
+  edges: [
+    { from: 'client', to: 'lb' },
+    { from: 'lb',     to: 'web' },
+    { from: 'web',    to: 'api' },
+    { from: 'api',    to: 'cache', label: 'check' },
+    { from: 'api',    to: 'db',    label: 'miss → query' },
+  ],
+})`,
+      },
+
+      {
+        name: '2 · Every node kind (gallery)',
+        kind: 'render',
+        template: `// All 23 built-in node kinds. Disconnected nodes stack in column 0
+// because they're all "sources" (no incoming edges).
+({
+  layout: 'lr',
+  nodes: [
+    { id: 'client',    kind: 'client',    label: 'client' },
+    { id: 'user',      kind: 'user',      label: 'user' },
+    { id: 'web',       kind: 'web',       label: 'web' },
+    { id: 'api',       kind: 'api',       label: 'api' },
+    { id: 'service',   kind: 'service',   label: 'service' },
+    { id: 'cache',     kind: 'cache',     label: 'cache' },
+    { id: 'db',        kind: 'db',        label: 'db' },
+    { id: 'nosql',     kind: 'nosql',     label: 'nosql' },
+    { id: 'queue',     kind: 'queue',     label: 'queue' },
+    { id: 'storage',   kind: 'storage',   label: 'storage' },
+    { id: 'cdn',       kind: 'cdn',       label: 'cdn' },
+    { id: 'dns',       kind: 'dns',       label: 'dns' },
+    { id: 'internet',  kind: 'internet',  label: 'internet' },
+    { id: 'lb',        kind: 'lb',        label: 'lb' },
+    { id: 'analytics', kind: 'analytics', label: 'analytics' },
+    { id: 'search',    kind: 'search',    label: 'search' },
+    { id: 'worker',    kind: 'worker',    label: 'worker' },
+    { id: 'mr',        kind: 'mr',        label: 'mr' },
+    { id: 'process',   kind: 'process',   label: 'process' },
+    { id: 'note',      kind: 'note',      label: 'note' },
+    { id: 'plain',     kind: 'plain',     label: 'plain' },
+  ],
+  edges: [],
+})`,
+      },
+
+      {
+        name: '3 · Top-to-bottom layout',
+        kind: 'render',
+        template: `// layout: 'tb' flips the primary axis from horizontal to vertical.
+({
+  layout: 'tb',
+  nodes: [
+    { id: 'a', kind: 'client', label: 'Request' },
+    { id: 'b', kind: 'web',    label: 'Web tier' },
+    { id: 'c', kind: 'api',    label: 'API tier' },
+    { id: 'd', kind: 'db',     label: 'Database' },
+  ],
+  edges: [
+    { from: 'a', to: 'b' },
+    { from: 'b', to: 'c' },
+    { from: 'c', to: 'd' },
+  ],
+})`,
+      },
+
+      {
+        name: '4 · Fan-out (one source, many targets)',
+        kind: 'render',
+        template: `// Multiple edges sharing (node, side) auto-distribute their exit
+// points. No manual offsets needed.
+({
+  nodes: [
+    { id: 'lb',  kind: 'lb',  label: 'Load Balancer' },
+    { id: 'w1',  kind: 'web', label: 'web-1' },
+    { id: 'w2',  kind: 'web', label: 'web-2' },
+    { id: 'w3',  kind: 'web', label: 'web-3' },
+    { id: 'w4',  kind: 'web', label: 'web-4' },
+    { id: 'w5',  kind: 'web', label: 'web-5' },
+  ],
+  edges: [
+    { from: 'lb', to: 'w1' },
+    { from: 'lb', to: 'w2' },
+    { from: 'lb', to: 'w3' },
+    { from: 'lb', to: 'w4' },
+    { from: 'lb', to: 'w5' },
+  ],
+})`,
+      },
+
+      {
+        name: '5 · Cycle (feedback loop)',
+        kind: 'render',
+        template: `// Back-edges are detected via DFS and excluded from layering,
+// so the layout doesn't blow up. The back-edge still draws.
+({
+  nodes: [
+    { id: 's1', kind: 'process',  label: 'Step 1', sub: 'observe' },
+    { id: 's2', kind: 'process',  label: 'Step 2', sub: 'design'  },
+    { id: 's3', kind: 'process',  label: 'Step 3', sub: 'build'   },
+    { id: 's4', kind: 'process',  label: 'Step 4', sub: 'measure' },
+    { id: 'b',  kind: 'analytics', label: 'Benchmark' },
+  ],
+  edges: [
+    { from: 's1', to: 's2' },
+    { from: 's2', to: 's3' },
+    { from: 's3', to: 's4' },
+    { from: 's4', to: 'b'  },
+    { from: 'b',  to: 's2', label: 'next bottleneck', style: 'dashed' },
+  ],
+})`,
+      },
+
+      {
+        name: '6 · Edge styles (solid / dashed / dotted / bidir)',
+        kind: 'render',
+        template: `({
+  nodes: [
+    { id: 'a', kind: 'web', label: 'A' },
+    { id: 'b', kind: 'web', label: 'B' },
+    { id: 'c', kind: 'web', label: 'C' },
+    { id: 'd', kind: 'web', label: 'D' },
+    { id: 'e', kind: 'web', label: 'E' },
+  ],
+  edges: [
+    { from: 'a', to: 'b', label: 'solid' },
+    { from: 'b', to: 'c', label: 'dashed', style: 'dashed' },
+    { from: 'c', to: 'd', label: 'dotted', style: 'dotted' },
+    { from: 'd', to: 'e', label: 'bidir',  bidir: true },
+  ],
+})`,
+      },
+
+      {
+        name: '7 · UML class diagram',
+        kind: 'render',
+        template: `// kind: 'class' takes attrs[] and methods[] arrays. Width auto-fits
+// the longest line.
+({
+  nodes: [
+    { id: 'Animal', kind: 'class', label: 'Animal «abstract»',
+      attrs:   ['# name: String', '# age: int'],
+      methods: ['+ speak(): String', '+ describe(): String'] },
+    { id: 'Dog',  kind: 'class', label: 'Dog',
+      methods: ['+ speak() → "woof"'] },
+    { id: 'Cat',  kind: 'class', label: 'Cat',
+      methods: ['+ speak() → "meow"'] },
+  ],
+  edges: [
+    { from: 'Dog', to: 'Animal', label: 'extends', style: 'dashed' },
+    { from: 'Cat', to: 'Animal', label: 'extends', style: 'dashed' },
+  ],
+})`,
+      },
+
+      {
+        name: '8 · Async pipeline (queue + workers)',
+        kind: 'render',
+        template: `({
+  nodes: [
+    { id: 'client', kind: 'client',  label: 'Client' },
+    { id: 'api',    kind: 'api',     label: 'API' },
+    { id: 'q',      kind: 'queue',   label: 'SQS' },
+    { id: 'w',      kind: 'worker',  label: 'Workers', sub: 'autoscale' },
+    { id: 'db',     kind: 'db',      label: 'DB' },
+    { id: 's3',     kind: 'storage', label: 'S3' },
+    { id: 'notify', kind: 'service', label: 'Notify svc' },
+  ],
+  edges: [
+    { from: 'client', to: 'api' },
+    { from: 'api',    to: 'q', label: 'enqueue' },
+    { from: 'q',      to: 'w' },
+    { from: 'w',      to: 'db' },
+    { from: 'w',      to: 's3' },
+    { from: 'w',      to: 'notify', style: 'dashed' },
+  ],
+})`,
+      },
+
+      {
+        name: '9 · Explicit layer hints',
+        kind: 'render',
+        template: `// layer: <int> pins a node to a specific column even if its
+// predecessors would have put it elsewhere.
+({
+  nodes: [
+    { id: 'a', kind: 'client', label: 'A',  layer: 0 },
+    { id: 'b', kind: 'web',    label: 'B',  layer: 1 },
+    { id: 'c', kind: 'api',    label: 'C',  layer: 2 },
+    { id: 'd', kind: 'db',     label: 'D',  layer: 4 },  // gap intentional
+    { id: 'e', kind: 'cache',  label: 'E',  layer: 4 },
+  ],
+  edges: [
+    { from: 'a', to: 'b' },
+    { from: 'b', to: 'c' },
+    { from: 'c', to: 'd' },
+    { from: 'c', to: 'e' },
+  ],
+})`,
+      },
+
+      {
+        name: '10 · Syntax highlight — Python',
+        kind: 'highlight',
+        template: `({
+  language: 'python',
+  code: \`from collections import deque
+
+class LRU:
+    """Least-recently-used cache with O(1) get/set."""
+
+    def __init__(self, capacity: int):
+        self.cap = capacity
+        self.map = {}            # key -> Node
+        self.head = self.tail = None
+
+    def get(self, key):
+        node = self.map.get(key)
+        if node is None:
+            return None
+        self._move_to_head(node)
+        return node.value
+
+    def set(self, key, value):
+        if key in self.map:
+            self.map[key].value = value
+            self._move_to_head(self.map[key])
+            return
+        # evict the oldest entry when at capacity
+        if len(self.map) >= self.cap:
+            del self.map[self.tail.key]
+            self._remove_tail()
+        # ...
+\`
+})`,
+      },
+
+      {
+        name: '11 · Syntax highlight — SQL',
+        kind: 'highlight',
+        template: `({
+  language: 'sql',
+  code: \`-- Schema for a paste-bin-style URL shortener.
+CREATE TABLE pastes (
+  shortlink                    CHAR(7)      NOT NULL,
+  expiration_length_in_minutes INT          NOT NULL,
+  created_at                   DATETIME     NOT NULL,
+  paste_path                   VARCHAR(255) NOT NULL,
+  PRIMARY KEY (shortlink),
+  INDEX        (created_at)
+);
+
+SELECT shortlink, paste_path
+FROM   pastes
+WHERE  created_at > NOW() - INTERVAL '1 day'
+ORDER BY created_at DESC
+LIMIT  100;
+\`
+})`,
+      },
+    ];
+
+    /* ----------------------------------------------------------------
+     * Renderer
+     * ---------------------------------------------------------------- */
+    const editor    = document.getElementById('editor');
+    const preview   = document.getElementById('preview');
+    const status    = document.getElementById('preview-status');
+    const editorSt  = document.getElementById('editor-status');
+    const picker    = document.getElementById('example-picker');
+    const resetBtn  = document.getElementById('reset');
+
+    let currentIdx = 0;
+    let renderTimer = null;
+
+    function storageKey(idx) { return 'qa-playground:ex-' + idx; }
+
+    function populatePicker() {
+      picker.innerHTML = '';
+      for (let i = 0; i < examples.length; i++) {
+        const o = document.createElement('option');
+        o.value = i;
+        o.textContent = examples[i].name;
+        picker.appendChild(o);
+      }
+    }
+
+    function loadExample(idx, useSaved = true) {
+      currentIdx = idx;
+      picker.value = String(idx);
+      const saved = useSaved ? localStorage.getItem(storageKey(idx)) : null;
+      editor.value = saved != null ? saved : examples[idx].template;
+      render();
+    }
+
+    function render() {
+      // persist edit
+      localStorage.setItem(storageKey(currentIdx), editor.value);
+
+      preview.innerHTML = '';
+      const example = examples[currentIdx];
+      const code    = editor.value;
+
+      let result;
+      try {
+        // Evaluate JS object literal — wrap in function so `({...})` works.
+        result = new Function('Quickagram', 'return (' + code + ')')(Quickagram);
+      } catch (e) {
+        const err = document.createElement('div');
+        err.className = 'err';
+        err.textContent = 'Parse error:\n  ' + (e.message || e);
+        preview.appendChild(err);
+        status.textContent = 'parse error';
+        status.className = 'status err';
+        return;
+      }
+
+      try {
+        if (example.kind === 'highlight') {
+          if (!result || typeof result.code !== 'string') {
+            throw new Error('Expected { code, language }');
+          }
+          const pre = document.createElement('pre');
+          pre.className = 'qa-code';
+          pre.innerHTML = Quickagram.highlight(result.code, result.language || 'text');
+          preview.appendChild(pre);
+          status.textContent = 'highlighted · ' + (result.language || 'text');
+          status.className = 'status ok';
+        } else {
+          // render diagram
+          if (!result || !Array.isArray(result.nodes)) {
+            throw new Error('Expected { nodes: [...], edges?: [...] }');
+          }
+          Quickagram.render(preview, result);
+          const n = result.nodes.length;
+          const e = (result.edges || []).length;
+          status.textContent = `rendered · ${n} node${n === 1 ? '' : 's'}, ${e} edge${e === 1 ? '' : 's'}`;
+          status.className = 'status ok';
+        }
+      } catch (e) {
+        const err = document.createElement('div');
+        err.className = 'err';
+        err.textContent = 'Render error:\n  ' + (e.message || e);
+        preview.appendChild(err);
+        status.textContent = 'render error';
+        status.className = 'status err';
+      }
+    }
+
+    function scheduleRender() {
+      editorSt.textContent = 'editing…';
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(() => {
+        render();
+        editorSt.textContent = 'auto-saved';
+      }, 300);
+    }
+
+    /* wire up */
+    populatePicker();
+    picker.addEventListener('change', () => loadExample(parseInt(picker.value, 10)));
+    editor.addEventListener('input', scheduleRender);
+    resetBtn.addEventListener('click', () => {
+      localStorage.removeItem(storageKey(currentIdx));
+      loadExample(currentIdx, false);
+    });
+    // keyboard: support TAB to indent inside the textarea
+    editor.addEventListener('keydown', e => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const s = editor.selectionStart, en = editor.selectionEnd;
+        editor.value = editor.value.slice(0, s) + '  ' + editor.value.slice(en);
+        editor.selectionStart = editor.selectionEnd = s + 2;
+        scheduleRender();
+      }
+    });
+
+    loadExample(0);
+  </script>
+</body>
+</html>
