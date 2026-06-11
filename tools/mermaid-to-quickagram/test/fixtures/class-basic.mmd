@@ -1,0 +1,18 @@
+classDiagram
+    Animal <|-- Dog
+    Animal <|-- Cat
+    class Animal {
+      +String name
+      +int age
+      +eat() void
+    }
+    %% no-space-before-brace form (mermaid examples page uses this)
+    class Cat{
+      +bool indoor
+      +purr()
+    }
+    Dog *-- Tail
+    Cat o-- Whiskers
+    Animal ..> Food : eats
+    Owner "1" --> "*" Pet : owns
+    Vehicle ..|> Drivable

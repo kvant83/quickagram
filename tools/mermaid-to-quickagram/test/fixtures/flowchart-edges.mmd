@@ -1,0 +1,11 @@
+flowchart TD
+  A -- request --> B
+  A -. async .-> C
+  A ==> D
+  A --x E
+  A --o F
+  subgraph backend
+    B
+    C
+    D
+  end

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg class="qa-svg" preserveAspectRatio="xMidYMid meet" viewBox="-40 -220 620 440" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter height="140%" id="qa-shadow" width="140%" x="-20%" y="-20%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.5"/>
+      <feOffset dx="0" dy="3" result="off"/>
+      <feComponentTransfer>
+        <feFuncA slope="0.25" type="linear"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="qa-arrow" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="9" refY="5" viewBox="0 0 10 10">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#334155"/>
+    </marker>
+    <marker id="qa-triangle" markerHeight="12" markerWidth="12" orient="auto-start-reverse" refX="11" refY="6" viewBox="0 0 12 12">
+      <path d="M 0 0 L 11 6 L 0 12 Z" fill="#ffffff" stroke="#334155" stroke-linejoin="round" stroke-width="1.6"/>
+    </marker>
+    <marker id="qa-diamond" markerHeight="10" markerWidth="14" orient="auto-start-reverse" refX="1" refY="5" viewBox="0 0 14 10">
+      <path d="M 0 5 L 7 0 L 14 5 L 7 10 Z" fill="#334155" stroke="#334155" stroke-linejoin="round" stroke-width="1.2"/>
+    </marker>
+    <marker id="qa-odiamond" markerHeight="10" markerWidth="14" orient="auto-start-reverse" refX="1" refY="5" viewBox="0 0 14 10">
+      <path d="M 0 5 L 7 0 L 14 5 L 7 10 Z" fill="#ffffff" stroke="#334155" stroke-linejoin="round" stroke-width="1.4"/>
+    </marker>
+    <marker id="qa-circle" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="5" refY="5" viewBox="0 0 10 10">
+      <circle cx="5" cy="5" fill="#334155" r="4" stroke="#334155"/>
+    </marker>
+    <marker id="qa-cross" markerHeight="10" markerWidth="10" orient="auto-start-reverse" refX="5" refY="5" viewBox="0 0 10 10">
+      <path d="M 1 1 L 9 9 M 9 1 L 1 9" fill="none" stroke="#334155" stroke-linecap="round" stroke-width="1.8"/>
+    </marker>
+    <linearGradient id="qa-g-818cf8-4f46e5" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#8b95f9"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="qa-g-818cf8-4f46e5" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#8b95f9"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="qa-g-818cf8-4f46e5" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#8b95f9"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="qa-g-818cf8-4f46e5" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#8b95f9"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <g class="qa-edges">
+    <g class="qa-edge">
+      <path d="M 220 -51 L 229 -51 Q 238 -51 247 -51 L 260 -51 Q 270 -51 270 -61 L 270 -116 Q 270 -126 280 -126 L 293 -126 Q 302 -126 311 -126 L 320 -126" fill="none" marker-start="url(#qa-triangle)" stroke="#475569" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+    </g>
+    <g class="qa-edge">
+      <path d="M 220 0 L 229 0 Q 238 0 247 0 L 265.5 0 Q 270 0 270 4.5 L 270 4.5 Q 270 9 274.5 9 L 293 9 Q 302 9 311 9 L 320 9" fill="none" marker-start="url(#qa-triangle)" stroke="#475569" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+    </g>
+    <g class="qa-edge">
+      <path d="M 220 51 L 229 51 Q 238 51 247 51 L 260 51 Q 270 51 270 61 L 270 125 Q 270 135 280 135 L 293 135 Q 302 135 311 135 L 320 135" fill="none" marker-start="url(#qa-triangle)" stroke="#475569" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+    </g>
+  </g>
+  <g class="qa-node qa-class" data-id="Animal" transform="translate(0,-63)">
+    <path d="M 8 0 H 212 A 8 8 0 0 1 220 8 V 118 A 8 8 0 0 1 212 126 H 8 A 8 8 0 0 1 0 118 V 8 A 8 8 0 0 1 8 0 Z" fill="#ffffff" filter="url(#qa-shadow)" stroke="#3730a3" stroke-width="1.5"/>
+    <path d="M 8 0 H 212 A 8 8 0 0 1 220 8 V 30 H 0 V 8 A 8 8 0 0 1 8 0 Z" fill="url(#qa-g-818cf8-4f46e5)"/>
+    <text dominant-baseline="middle" fill="#fff" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="700" text-anchor="middle" x="110" y="16">Animal</text>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="42">+int age</text>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="60">+String gender</text>
+    <line stroke="#3730a3" stroke-opacity="0.4" x1="0" x2="220" y1="74" y2="74"/>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="82">+isMammal()</text>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="100">+mate()</text>
+  </g>
+  <g class="qa-node qa-class" data-id="Duck" transform="translate(320,-180)">
+    <path d="M 8 0 H 212 A 8 8 0 0 1 220 8 V 100 A 8 8 0 0 1 212 108 H 8 A 8 8 0 0 1 0 100 V 8 A 8 8 0 0 1 8 0 Z" fill="#ffffff" filter="url(#qa-shadow)" stroke="#3730a3" stroke-width="1.5"/>
+    <path d="M 8 0 H 212 A 8 8 0 0 1 220 8 V 30 H 0 V 8 A 8 8 0 0 1 8 0 Z" fill="url(#qa-g-818cf8-4f46e5)"/>
+    <text dominant-baseline="middle" fill="#fff" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="700" text-anchor="middle" x="110" y="16">Duck</text>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="42">+String beakColor</text>
+    <line stroke="#3730a3" stroke-opacity="0.4" x1="0" x2="220" y1="56" y2="56"/>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="64">+swim()</text>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="82">+quack()</text>
+  </g>
+  <g class="qa-node qa-class" data-id="Fish" transform="translate(320,-36)">
+    <path d="M 8 0 H 212 A 8 8 0 0 1 220 8 V 82 A 8 8 0 0 1 212 90 H 8 A 8 8 0 0 1 0 82 V 8 A 8 8 0 0 1 8 0 Z" fill="#ffffff" filter="url(#qa-shadow)" stroke="#3730a3" stroke-width="1.5"/>
+    <path d="M 8 0 H 212 A 8 8 0 0 1 220 8 V 30 H 0 V 8 A 8 8 0 0 1 8 0 Z" fill="url(#qa-g-818cf8-4f46e5)"/>
+    <text dominant-baseline="middle" fill="#fff" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="700" text-anchor="middle" x="110" y="16">Fish</text>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="42">-int sizeInFeet</text>
+    <line stroke="#3730a3" stroke-opacity="0.4" x1="0" x2="220" y1="56" y2="56"/>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="64">-canEat()</text>
+  </g>
+  <g class="qa-node qa-class" data-id="Zebra" transform="translate(320,90)">
+    <path d="M 8 0 H 212 A 8 8 0 0 1 220 8 V 82 A 8 8 0 0 1 212 90 H 8 A 8 8 0 0 1 0 82 V 8 A 8 8 0 0 1 8 0 Z" fill="#ffffff" filter="url(#qa-shadow)" stroke="#3730a3" stroke-width="1.5"/>
+    <path d="M 8 0 H 212 A 8 8 0 0 1 220 8 V 30 H 0 V 8 A 8 8 0 0 1 8 0 Z" fill="url(#qa-g-818cf8-4f46e5)"/>
+    <text dominant-baseline="middle" fill="#fff" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="700" text-anchor="middle" x="110" y="16">Zebra</text>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="42">+bool is_wild</text>
+    <line stroke="#3730a3" stroke-opacity="0.4" x1="0" x2="220" y1="56" y2="56"/>
+    <text dominant-baseline="hanging" fill="#1e293b" font-family="'JetBrains Mono', 'SF Mono', Menlo, monospace" font-size="12" x="12" y="64">+run()</text>
+  </g>
+</svg>
