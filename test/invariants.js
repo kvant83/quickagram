@@ -263,14 +263,80 @@ function detectEdgeMissesTarget(svg, diagram, opts) {
   return violations;
 }
 
+/* Distance from a point to a node's actual VISIBLE perimeter — not its
+ * bbox edge. Returns -1 if the kind has no special perimeter geometry
+ * (rect/stadium/parallelogram/trapezoid/hexagon all closely fill their
+ * bbox so the bbox-edge test in detectEdgeMissesTarget catches them). */
+function distanceToShapePerimeter(point, node, kind) {
+  const [px, py] = point;
+  const cx = node.x + node._w / 2, cy = node.y + node._h / 2;
+  const w = node._w, h = node._h;
+  if (kind === 'diamond') {
+    // 4 line segments: (cx,top)→(right,cy)→(cx,bot)→(left,cy)→(cx,top)
+    const tips = [[cx, node.y], [node.x + w, cy], [cx, node.y + h], [node.x, cy], [cx, node.y]];
+    let best = Infinity;
+    for (let i = 0; i < 4; i++) {
+      const [ax, ay] = tips[i], [bx, by] = tips[i + 1];
+      // distance from (px,py) to segment a-b
+      const dx = bx - ax, dy = by - ay;
+      const l2 = dx * dx + dy * dy;
+      let t = ((px - ax) * dx + (py - ay) * dy) / l2;
+      t = Math.max(0, Math.min(1, t));
+      const qx = ax + t * dx, qy = ay + t * dy;
+      best = Math.min(best, Math.hypot(px - qx, py - qy));
+    }
+    return best;
+  }
+  if (kind === 'circle' || kind === 'start' || kind === 'end') {
+    const r = Math.min(w, h) / 2;
+    return Math.abs(Math.hypot(px - cx, py - cy) - r);
+  }
+  return -1;       // not specially modelled — let bbox check handle it
+}
+
+/* Detect edges whose endpoints land outside the VISIBLE shape (not
+ * just outside the bbox). Catches the case where fan-out offsets
+ * place an arrow at the bbox edge but well outside the inscribed
+ * diamond/circle. */
+function detectEdgeEndpointOffShape(svg, diagram, opts) {
+  opts = opts || {};
+  const slack = opts.shapeSlack != null ? opts.shapeSlack : 4;
+  const edgePaths = collectEdgePaths(svg, diagram);
+  const nodeByKind = new Map(diagram.nodes.map(n => [n.id, n.kind]));
+  const violations = [];
+  for (const ep of edgePaths) {
+    if (!ep.edge) continue;
+    const checkEnd = (point, nodeId, role) => {
+      const n = diagram.nodes.find(x => x.id === nodeId);
+      if (!n) return;
+      const d = distanceToShapePerimeter(point, n, nodeByKind.get(nodeId));
+      if (d < 0) return;
+      if (d > slack) {
+        violations.push({
+          edge:    ep.edge.from + '→' + ep.edge.to,
+          role,
+          node:    nodeId,
+          kind:    nodeByKind.get(nodeId),
+          point,
+          distancePx: Math.round(d),
+        });
+      }
+    };
+    checkEnd(ep.pts[0],                       ep.edge.from, 'source');
+    checkEnd(ep.pts[ep.pts.length - 1],       ep.edge.to,   'target');
+  }
+  return violations;
+}
+
 /* Single entry point — runs every invariant on a rendered diagram and
  * returns a list of violations across all checks. Empty array = the
  * diagram is visually correct under our checks. */
 function checkInvariants(svg, diagram, opts) {
   return [
-    ...detectEdgeNodeIntersection(svg, diagram, opts).map(v => ({ kind: 'edge-crosses-node',   ...v })),
-    ...detectEdgeOverlap         (svg, diagram, opts).map(v => ({ kind: 'edges-overlap',       ...v })),
-    ...detectEdgeMissesTarget    (svg, diagram, opts).map(v => ({ kind: 'edge-misses-target',  ...v })),
+    ...detectEdgeNodeIntersection (svg, diagram, opts).map(v => ({ kind: 'edge-crosses-node',     ...v })),
+    ...detectEdgeOverlap          (svg, diagram, opts).map(v => ({ kind: 'edges-overlap',         ...v })),
+    ...detectEdgeMissesTarget     (svg, diagram, opts).map(v => ({ kind: 'edge-misses-target',    ...v })),
+    ...detectEdgeEndpointOffShape (svg, diagram, opts).map(v => ({ kind: 'edge-endpoint-off-shape', ...v })),
   ];
 }
 
@@ -279,6 +345,8 @@ module.exports = {
   detectEdgeNodeIntersection,
   detectEdgeOverlap,
   detectEdgeMissesTarget,
+  detectEdgeEndpointOffShape,
+  distanceToShapePerimeter,
   pathPoints,
   segmentCrossesRect,
   collinearOverlapLen,

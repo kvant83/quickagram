@@ -750,6 +750,29 @@ snap('class-diagram-inheritance', {
   ],
 });
 
+snap('flowchart-christmas-fanout', {
+  // The Mermaid docs `flowchart TD` Christmas example. Exercises the
+  // diamond-perimeter projection fix: 3 edges fanning out from the
+  // bottom of a diamond must all land ON the visible diamond, not on
+  // the bbox edge 72 px below the visible shape.
+  layout: 'tb', padding: 40,
+  nodes: [
+    { id: 'A', kind: 'plain',   label: 'Christmas' },
+    { id: 'B', kind: 'plain',   label: 'Go shopping' },
+    { id: 'C', kind: 'diamond', label: 'Let me think' },
+    { id: 'D', kind: 'plain',   label: 'Laptop' },
+    { id: 'E', kind: 'plain',   label: 'iPhone' },
+    { id: 'F', kind: 'plain',   label: 'Car' },
+  ],
+  edges: [
+    { from: 'A', to: 'B', label: 'Get money' },
+    { from: 'B', to: 'C' },
+    { from: 'C', to: 'D', label: 'One'   },
+    { from: 'C', to: 'E', label: 'Two'   },
+    { from: 'C', to: 'F', label: 'Three' },
+  ],
+});
+
 snap('sequence-diagram-lifelines', {
   layout: 'sequence',
   nodes: [

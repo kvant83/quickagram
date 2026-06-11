@@ -748,13 +748,58 @@
   }
 
   /* ---------- edge geometry ---------- */
+  /* For a node, return the point where an edge attached to `side`
+   * with a perpendicular `offset` from the side midpoint actually
+   * meets the node's VISIBLE shape.
+   *
+   * Rectangles, stadiums, cylinders, hexagons, parallelograms,
+   * trapezoids: the bbox edge IS the visible perimeter at all offsets.
+   *
+   * Diamonds: the visible perimeter is 4 line segments inscribed in
+   * the bbox. As you walk along a bbox side away from the tip, the
+   * diamond's surface tapers diagonally inward — for a square diamond,
+   * y = h - |offset| on the bottom side, etc. Without this projection
+   * fan-out offsets place the arrow exit far outside the visible shape.
+   *
+   * Circles / dots: project the bbox-edge point radially onto the
+   * inscribed circle. The exit is at the circle perimeter on the ray
+   * from the node centre through the would-be bbox point. */
   function sidePoint(n, side, offset = 0) {
     const cx = n.x + n._w / 2, cy = n.y + n._h / 2;
+    const w = n._w, h = n._h;
+    const theme = THEMES[n.kind] || THEMES.plain;
+    const shape = theme.shape;
+    const o = offset || 0;
+
+    if (shape === 'diamond') {
+      const ao = Math.abs(o);
+      switch (side) {
+        case 'top':    return [cx + o, n.y         + ao];
+        case 'bottom': return [cx + o, n.y + h     - ao];
+        case 'left':   return [n.x         + ao,   cy + o];
+        case 'right':  return [n.x + w     - ao,   cy + o];
+      }
+    }
+
+    if (shape === 'circle' || shape === 'dot' || shape === 'doubleDot') {
+      const r = Math.min(w, h) / 2;
+      // Direction from centre to the would-be bbox point.
+      let dx, dy;
+      switch (side) {
+        case 'top':    dx = o;        dy = -h / 2; break;
+        case 'bottom': dx = o;        dy =  h / 2; break;
+        case 'left':   dx = -w / 2;   dy = o;      break;
+        case 'right':  dx =  w / 2;   dy = o;      break;
+      }
+      const d = Math.hypot(dx, dy) || 1;
+      return [cx + dx * r / d, cy + dy * r / d];
+    }
+
     switch (side) {
-      case 'right':  return [n.x + n._w, cy + offset];
-      case 'left':   return [n.x,        cy + offset];
-      case 'top':    return [cx + offset, n.y];
-      case 'bottom': return [cx + offset, n.y + n._h];
+      case 'right':  return [n.x + n._w, cy + o];
+      case 'left':   return [n.x,        cy + o];
+      case 'top':    return [cx + o, n.y];
+      case 'bottom': return [cx + o, n.y + n._h];
     }
   }
   function autoSides(a, b) {
@@ -1395,7 +1440,7 @@
 
   return {
     render,
-    version: '0.4.2',
+    version: '0.4.3',
     THEMES,
     SHAPES,
     autoLayout,
