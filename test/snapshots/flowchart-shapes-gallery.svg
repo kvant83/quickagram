@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg class="qa-svg" preserveAspectRatio="xMidYMid meet" viewBox="-40 -550 248 1100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter height="140%" id="qa-shadow" width="140%" x="-20%" y="-20%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.5"/>
+      <feOffset dx="0" dy="3" result="off"/>
+      <feComponentTransfer>
+        <feFuncA slope="0.25" type="linear"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="qa-arrow" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="9" refY="5" viewBox="0 0 10 10">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#334155"/>
+    </marker>
+    <marker id="qa-triangle" markerHeight="12" markerWidth="12" orient="auto-start-reverse" refX="11" refY="6" viewBox="0 0 12 12">
+      <path d="M 0 0 L 11 6 L 0 12 Z" fill="#ffffff" stroke="#334155" stroke-linejoin="round" stroke-width="1.6"/>
+    </marker>
+    <marker id="qa-diamond" markerHeight="10" markerWidth="14" orient="auto-start-reverse" refX="1" refY="5" viewBox="0 0 14 10">
+      <path d="M 0 5 L 7 0 L 14 5 L 7 10 Z" fill="#334155" stroke="#334155" stroke-linejoin="round" stroke-width="1.2"/>
+    </marker>
+    <marker id="qa-odiamond" markerHeight="10" markerWidth="14" orient="auto-start-reverse" refX="1" refY="5" viewBox="0 0 14 10">
+      <path d="M 0 5 L 7 0 L 14 5 L 7 10 Z" fill="#ffffff" stroke="#334155" stroke-linejoin="round" stroke-width="1.4"/>
+    </marker>
+    <marker id="qa-circle" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="5" refY="5" viewBox="0 0 10 10">
+      <circle cx="5" cy="5" fill="#334155" r="4" stroke="#334155"/>
+    </marker>
+    <marker id="qa-cross" markerHeight="10" markerWidth="10" orient="auto-start-reverse" refX="5" refY="5" viewBox="0 0 10 10">
+      <path d="M 1 1 L 9 9 M 9 1 L 1 9" fill="none" stroke="#334155" stroke-linecap="round" stroke-width="1.8"/>
+    </marker>
+    <linearGradient id="qa-g-f1f5f9-e2e8f0" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f2f6f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="qa-g-fde68a-fbbf24" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fde893"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <linearGradient id="qa-g-bae6fd-38bdf8" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#c0e8fd"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="qa-g-fef3c7-fbbf24" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fef4cb"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <linearGradient id="qa-g-94a3b8-475569" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#9daabe"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <linearGradient id="qa-g-4ade80-16a34a" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#58e18a"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+    <linearGradient id="qa-g-ddd6fe-a78bfa" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#e0d9fe"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="qa-g-fed7aa-fb923c" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fedab1"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+  </defs>
+  <g class="qa-edges"/>
+  <g class="qa-node" data-id="rect" transform="translate(0,-510)">
+    <path d="M 12 0 H 156 A 12 12 0 0 1 168 12 V 60 A 12 12 0 0 1 156 72 H 12 A 12 12 0 0 1 0 60 V 12 A 12 12 0 0 1 12 0 Z" fill="url(#qa-g-f1f5f9-e2e8f0)" filter="url(#qa-shadow)" stroke="#94a3b8" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#1e293b" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="36">rectangle</text>
+  </g>
+  <g class="qa-node" data-id="circ" transform="translate(0,-402)">
+    <path d="M 0 84 a 84 84 0 1 0 168 0 a 84 84 0 1 0 -168 0 Z" fill="url(#qa-g-fde68a-fbbf24)" filter="url(#qa-shadow)" stroke="#b45309" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#1e293b" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="84">circle</text>
+  </g>
+  <g class="qa-node" data-id="stad" transform="translate(0,-198)">
+    <path d="M 36 0 H 132 A 36 36 0 0 1 132 72 H 36 A 36 36 0 0 1 36 0 Z" fill="url(#qa-g-bae6fd-38bdf8)" filter="url(#qa-shadow)" stroke="#075985" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#1e293b" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="36">stadium</text>
+  </g>
+  <g class="qa-node" data-id="diam" transform="translate(0,-90)">
+    <path d="M 84 0 L 168 84 L 84 168 L 0 84 Z" fill="url(#qa-g-fef3c7-fbbf24)" filter="url(#qa-shadow)" stroke="#92400e" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#1e293b" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="84">diamond</text>
+  </g>
+  <g class="qa-node" data-id="hex" transform="translate(0,114)">
+    <path d="M 20 0 H 148 L 168 36 L 148 72 H 20 L 0 36 Z" fill="url(#qa-g-94a3b8-475569)" filter="url(#qa-shadow)" stroke="#1e293b" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#ffffff" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="36">hexagon</text>
+  </g>
+  <g class="qa-node" data-id="cyl" transform="translate(0,222)">
+    <path d="M 0 10 a 84 10 0 0 1 168 0 V 62 a 84 10 0 0 1 -168 0 Z" fill="url(#qa-g-4ade80-16a34a)" filter="url(#qa-shadow)" stroke="#15803d" stroke-width="1.5"/>
+    <path d="M 0 10 a 84 10 0 0 0 168 0" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-opacity="0.7" stroke-width="1.2"/>
+    <text dominant-baseline="middle" fill="#ffffff" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="36">cylinder</text>
+  </g>
+  <g class="qa-node" data-id="par" transform="translate(0,330)">
+    <path d="M 42 0 H 168 L 126 72 H 0 Z" fill="url(#qa-g-ddd6fe-a78bfa)" filter="url(#qa-shadow)" stroke="#5b21b6" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#1e293b" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="36">parallel</text>
+  </g>
+  <g class="qa-node" data-id="trap" transform="translate(0,438)">
+    <path d="M 42 0 H 126 L 168 72 H 0 Z" fill="url(#qa-g-fed7aa-fb923c)" filter="url(#qa-shadow)" stroke="#9a3412" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#1e293b" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="36">trapezoid</text>
+  </g>
+</svg>

@@ -60,6 +60,8 @@ global.CSS = { escape: s => s.replace(/[^a-zA-Z0-9_-]/g, c => '\\' + c) };
 global.self = global;
 
 const Q = require(path.join(__dirname, '..', 'src', 'quickagram.js'));
+const { snapshot } = require('./snapshot');
+const { checkInvariants } = require('./invariants');
 
 /* ---------- tiny test runner ---------- */
 let passed = 0, failed = 0;
@@ -67,6 +69,34 @@ const section = name => console.log('\n# ' + name);
 function t(name, fn) {
   try { fn(); passed++; console.log('  ✓ ' + name); }
   catch (e) { failed++; console.log('  ✗ ' + name + '\n      ' + e.message); }
+}
+/* Snapshot helper:
+ *   1. render the diagram with the engine
+ *   2. run visual-correctness invariants (no edge-through-node, no
+ *      overlapping edge pair, no arrow missing its target) — this
+ *      catches BUGS, not just changes
+ *   3. compare resulting SVG against the approved baseline file
+ *
+ * Either step can fail independently. Run with UPDATE_SNAPSHOTS=1 to
+ * re-bless after an intentional change. Invariants always fire; you
+ * cannot UPDATE_SNAPSHOTS your way out of a broken diagram. */
+function snap(name, diagram) {
+  const c = makeEl('div');
+  Q.render(c, diagram);
+  // Step 1: invariants — these are semantic correctness checks, not
+  // baselines. They fail whenever the rendering is geometrically
+  // broken, regardless of whether the SVG output has changed.
+  const viols = checkInvariants(c.children[0], diagram);
+  if (viols.length) {
+    failed++;
+    console.log('  ✗ ' + name + ' (invariants)');
+    for (const v of viols) console.log('      ' + JSON.stringify(v));
+    return;
+  }
+  // Step 2: snapshot comparison.
+  const r = snapshot(name, c);
+  if (r.pass) { passed++; console.log('  ✓ ' + name + '  ' + r.msg); }
+  else        { failed++; console.log('  ✗ ' + name + '\n      ' + r.msg.split('\n').join('\n      ')); }
 }
 
 /* ---------- helpers used across tests ---------- */
@@ -656,6 +686,80 @@ t('sequence: dashed style honored on response messages', () => {
   const svg = container.children[0];
   const path = svg.querySelector('.qa-edge').children.find(c => c.tag === 'path');
   assert.strictEqual(path.attrs['stroke-dasharray'], '6 5');
+});
+
+/* =====================================================================
+ * v0.4.1 — visual snapshot tests
+ * =====================================================================
+ *
+ * These compare the exact SVG output against approved baselines in
+ * test/snapshots/. To re-approve after an intentional engine change,
+ * run:    UPDATE_SNAPSHOTS=1 node test/smoke.js
+ * then visually review the regenerated .svg files in a browser and
+ * commit them.
+ * ===================================================================== */
+section('Visual snapshots (test/snapshots/*.svg)');
+
+snap('flowchart-shapes-gallery', {
+  layout: 'lr',
+  nodes: [
+    { id: 'rect',  kind: 'plain',            label: 'rectangle'  },
+    { id: 'circ',  kind: 'circle',           label: 'circle'     },
+    { id: 'stad',  kind: 'stadium',          label: 'stadium'    },
+    { id: 'diam',  kind: 'diamond',          label: 'diamond'    },
+    { id: 'hex',   kind: 'lb',               label: 'hexagon'    },
+    { id: 'cyl',   kind: 'db',               label: 'cylinder'   },
+    { id: 'par',   kind: 'parallelogram',    label: 'parallel'   },
+    { id: 'trap',  kind: 'trapezoid',        label: 'trapezoid'  },
+  ],
+  edges: [],
+});
+
+snap('state-diagram-singleton-end', {
+  layout: 'lr',
+  nodes: [
+    { id: '__start__', kind: 'start', label: '' },
+    { id: 'Still',     kind: 'state', label: 'Still'  },
+    { id: 'Moving',    kind: 'state', label: 'Moving' },
+    { id: 'Crash',     kind: 'state', label: 'Crash'  },
+    { id: '__end__',   kind: 'end',   label: '' },
+  ],
+  edges: [
+    { from: '__start__', to: 'Still'   },
+    { from: 'Still',     to: '__end__' },   // the long-span edge that
+    { from: 'Still',     to: 'Moving'  },   // must detour over Moving + Crash
+    { from: 'Moving',    to: 'Still'   },
+    { from: 'Moving',    to: 'Crash'   },
+    { from: 'Crash',     to: '__end__' },
+  ],
+});
+
+snap('class-diagram-inheritance', {
+  layout: 'lr',
+  nodes: [
+    { id: 'Animal', kind: 'class', label: 'Animal',
+      attrs:   ['+int age', '+String gender'],
+      methods: ['+isMammal()', '+mate()'] },
+    { id: 'Duck',  kind: 'class', label: 'Duck',
+      attrs: ['+String beakColor'], methods: ['+swim()', '+quack()'] },
+    { id: 'Fish',  kind: 'class', label: 'Fish' },
+  ],
+  edges: [
+    { from: 'Animal', to: 'Duck', toArrow: 'none', fromArrow: 'triangle' },
+    { from: 'Animal', to: 'Fish', toArrow: 'none', fromArrow: 'triangle' },
+  ],
+});
+
+snap('sequence-diagram-lifelines', {
+  layout: 'sequence',
+  nodes: [
+    { id: 'Alice', kind: 'participant', label: 'Alice' },
+    { id: 'John',  kind: 'participant', label: 'John'  },
+  ],
+  edges: [
+    { from: 'Alice', to: 'John',  label: 'Hello John, how are you?' },
+    { from: 'John',  to: 'Alice', label: 'I am good, thanks!', style: 'dashed' },
+  ],
 });
 
 /* =====================================================================

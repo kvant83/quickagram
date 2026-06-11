@@ -816,6 +816,35 @@
         e[fld] = userOff != null ? userOff : off;
       });
     }
+
+    /* PASS 2 — fan out edges that connect the SAME pair of nodes
+     * (in either direction). This catches the back-edge case (A→B
+     * plus B→A) which the previous pass misses because it groups by
+     * (node, side, role) and the two edges have different roles on
+     * each endpoint, putting them in singleton groups.
+     *
+     * Each multi-edge group between the same two nodes is given
+     * symmetric perpendicular offsets so the paths run in parallel
+     * corridors rather than on top of each other. */
+    const pairKey = new Map();   // 'minId|maxId' -> [edge indices]
+    for (let i = 0; i < edges.length; i++) {
+      const e = edges[i];
+      if (!nodeMap.has(e.from) || !nodeMap.has(e.to)) continue;
+      const k = e.from < e.to ? e.from + '|' + e.to : e.to + '|' + e.from;
+      if (!pairKey.has(k)) pairKey.set(k, []);
+      pairKey.get(k).push(i);
+    }
+    const pairStep = 14;          // px between parallel corridors
+    for (const idxs of pairKey.values()) {
+      if (idxs.length < 2) continue;
+      idxs.forEach((idx, i) => {
+        const e = edges[idx];
+        const off = (i - (idxs.length - 1) / 2) * pairStep;
+        // don't override what pass 1 (or the user) already set
+        if (e._fromOff == null && e.fromOffset == null) e._fromOff = off;
+        if (e._toOff   == null && e.toOffset   == null) e._toOff   = off;
+      });
+    }
   }
 
   /* Find nodes that obstruct the rectangular routing band between two
@@ -1366,7 +1395,7 @@
 
   return {
     render,
-    version: '0.4.1',
+    version: '0.4.2',
     THEMES,
     SHAPES,
     autoLayout,
