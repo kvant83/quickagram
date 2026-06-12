@@ -556,11 +556,34 @@
 
     // 2. Stack edges as time-ordered messages. Note items get a wider
     //    slot so the note box doesn't crowd the surrounding arrows.
+    //
+    //    Frame-closing messages get an EXTRA slot bump so the frame's
+    //    bottom outer padding (~16 px) plus the per-message body
+    //    extent (self-loop 36, note 30) doesn't bleed past the next
+    //    message's top. Without this the next message ends up visually
+    //    inside the closed frame.
+    const frames = diagram.frames || [];
+    const frameEndsAt = new Map();
+    for (const f of frames) {
+      if (!frameEndsAt.has(f.endMsgIdx)) frameEndsAt.set(f.endMsgIdx, []);
+      frameEndsAt.get(f.endMsgIdx).push(f);
+    }
+    const FRAME_BOTTOM_CLEARANCE = 24;       // px between frame border and next message
     let yCursor = participantBottom + MESSAGE_TOP;
-    for (const e of edges) {
+    for (let i = 0; i < edges.length; i++) {
+      const e = edges[i];
       e._sequence = true;
       e._seqY = yCursor;
-      const slot = (e.kind === 'note' && e.note) ? NOTE_GAP : MESSAGE_GAP;
+      let slot = (e.kind === 'note' && e.note) ? NOTE_GAP : MESSAGE_GAP;
+      if (frameEndsAt.has(i)) {
+        // Match the per-edge bottom extent used by drawSequenceFrames.
+        let extent;
+        if (e.kind === 'note' && e.note)               extent = 30;
+        else if (e.from && e.from === e.to)            extent = 36;
+        else                                           extent = 8;
+        const frameOuterPad = 16;
+        slot = Math.max(slot, extent + frameOuterPad + FRAME_BOTTOM_CLEARANCE);
+      }
       yCursor += slot;
     }
     // 3. Lifeline extent.
@@ -1648,7 +1671,7 @@
 
   return {
     render,
-    version: '0.4.6',
+    version: '0.4.7',
     THEMES,
     SHAPES,
     autoLayout,
