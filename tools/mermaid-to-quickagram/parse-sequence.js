@@ -91,6 +91,8 @@ function parseSequence(src) {
 
   const participants = new Map();   // id -> { id, kind: 'participant'|'actor', label }
   const messages     = [];
+  const frames       = [];          // emitted { kind, label, startMsgIdx, endMsgIdx, dividers? }
+  const frameStack   = [];          // open frames being assembled
 
   function ensureParticipant(id, opts = {}) {
     if (!participants.has(id)) {
@@ -119,29 +121,73 @@ function parseSequence(src) {
     }
 
     // Note
+    //
+    // Emit as a "note" message in the timeline so it keeps its slot
+    // in the message stream (so frame y-bounds are calculated
+    // correctly). The legacy fields (from/to/label/style/toArrow/
+    // fromArrow) are kept so older snapshot tests / asserts that
+    // expected a self-loop "📝 …" still see one. The engine's
+    // sequence renderer now dispatches on the `note` payload field
+    // and draws a proper yellow note box positioned per the
+    // position spec when present, falling back to the self-loop
+    // form when the payload is missing.
     m = trim.match(/^Note\s+(left of|right of|over)\s+(.+?)\s*:\s*(.+)$/i);
     if (m) {
-      // Render notes as labelled "note" edges that loop on the participant.
-      // For 'over A,B' we tie the note to the first participant.
-      const ids = m[2].split(/\s*,\s*/);
+      const position = m[1].toLowerCase().replace(' of', '');  // 'left' | 'right' | 'over'
+      const ids = m[2].split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
       const text = m[3];
-      const id0 = ids[0].trim();
-      ensureParticipant(id0);
+      for (const id of ids) ensureParticipant(id);
       messages.push({
         kind:      'note',
-        from:      id0,
-        to:        id0,
+        from:      ids[0],
+        to:        ids[0],
         label:     '📝 ' + text,
         style:     'dotted',
         toArrow:   'none',
         fromArrow: 'none',
+        note: { position, participants: ids, text },
       });
       continue;
     }
 
-    // Skip-list — we don't parse these but we want the rest of the
-    // diagram to still work.
-    if (/^(activate|deactivate|autonumber|loop|end|alt|else|opt|par|and|critical|option|break|rect|links?|accTitle|accDescr|box)\b/i.test(trim)) {
+    // Frame-opener:  loop / alt / opt / par / critical / break / rect <label?>
+    //
+    // Each opens a region. `end` closes the innermost open region and
+    // emits a frame with the message indices it spans. `else` (in alt)
+    // / `and` (in par) / `option` (in critical) add a divider inside
+    // the current frame at the next message position.
+    m = trim.match(/^(loop|alt|opt|par|critical|break|rect)\b\s*(.*)$/i);
+    if (m) {
+      frameStack.push({
+        kind: m[1].toLowerCase(),
+        label: (m[2] || '').trim(),
+        startMsgIdx: messages.length,
+        dividers: [],
+      });
+      continue;
+    }
+    if (/^end\b/i.test(trim)) {
+      const top = frameStack.pop();
+      if (top && messages.length > top.startMsgIdx) {
+        frames.push({
+          kind: top.kind,
+          label: top.label,
+          startMsgIdx: top.startMsgIdx,
+          endMsgIdx:   messages.length - 1,
+          dividers:    top.dividers.length ? top.dividers : undefined,
+        });
+      }
+      continue;
+    }
+    m = trim.match(/^(else|and|option)\b\s*(.*)$/i);
+    if (m && frameStack.length) {
+      const top = frameStack[frameStack.length - 1];
+      top.dividers.push({ idx: messages.length, label: (m[2] || '').trim() });
+      continue;
+    }
+
+    // Remaining skip-list — features we still don't represent.
+    if (/^(activate|deactivate|autonumber|links?|accTitle|accDescr|box)\b/i.test(trim)) {
       continue;
     }
 
@@ -171,6 +217,7 @@ function parseSequence(src) {
     kind: 'sequence',
     participants: Array.from(participants.values()),
     messages,
+    frames,
   };
 }
 

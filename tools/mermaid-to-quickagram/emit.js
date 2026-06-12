@@ -44,9 +44,18 @@ function buildSequence(ast) {
     if (m.style && m.style !== 'solid') out.style = m.style;
     if (m.toArrow !== undefined && m.toArrow !== 'arrow') out.toArrow = m.toArrow;
     if (m.fromArrow !== undefined && m.fromArrow !== 'none') out.fromArrow = m.fromArrow;
+    // Carry the note-rendering metadata + the message kind through. The
+    // engine dispatches on `kind: 'note'` + `note: {…}` to draw a yellow
+    // note box; absence falls back to the legacy self-loop rendering.
+    if (m.kind === 'note') {
+      out.kind = 'note';
+      if (m.note) out.note = m.note;
+    }
     return out;
   });
-  return { layout: 'sequence', padding: 40, nodes, edges };
+  const diagram = { layout: 'sequence', padding: 40, nodes, edges };
+  if (ast.frames && ast.frames.length) diagram.frames = ast.frames;
+  return diagram;
 }
 
 /* ---------- class ---------- */
@@ -108,6 +117,11 @@ function prettyJS(diagram) {
     for (const g of diagram.groups) lines.push('    ' + groupLiteral(g) + ',');
     lines.push('  ],');
   }
+  if (diagram.frames && diagram.frames.length) {
+    lines.push('  frames: [');
+    for (const f of diagram.frames) lines.push('    ' + frameLiteral(f) + ',');
+    lines.push('  ],');
+  }
   lines.push('}');
   return lines.join('\n');
 }
@@ -123,16 +137,31 @@ function nodeLiteral(n) {
   return '{ ' + parts.join(', ') + ' }';
 }
 
+function frameLiteral(f) {
+  const parts = [
+    'kind: '         + JSON.stringify(f.kind),
+    'label: '        + JSON.stringify(f.label || ''),
+    'startMsgIdx: ' + f.startMsgIdx,
+    'endMsgIdx: '   + f.endMsgIdx,
+  ];
+  if (f.dividers && f.dividers.length) {
+    parts.push('dividers: ' + JSON.stringify(f.dividers));
+  }
+  return '{ ' + parts.join(', ') + ' }';
+}
+
 function edgeLiteral(e) {
   const parts = [
     'from: ' + JSON.stringify(e.from),
     'to: '   + JSON.stringify(e.to),
   ];
+  if (e.kind === 'note') parts.push('kind: ' + JSON.stringify(e.kind));
   if (e.label)      parts.push('label: '     + JSON.stringify(e.label));
   if (e.style)      parts.push('style: '     + JSON.stringify(e.style));
   if (e.toArrow)    parts.push('toArrow: '   + JSON.stringify(e.toArrow));
   if (e.fromArrow)  parts.push('fromArrow: ' + JSON.stringify(e.fromArrow));
   if (e.color)      parts.push('color: '     + JSON.stringify(e.color));
+  if (e.note)       parts.push('note: '      + JSON.stringify(e.note));
   return '{ ' + parts.join(', ') + ' }';
 }
 

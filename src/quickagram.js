@@ -533,6 +533,12 @@
   const MESSAGE_GAP     = 48;
   const MESSAGE_TOP     = 40;
 
+  /* Notes are 56 px tall and need a bit more vertical room than a
+   * plain message line; frames extend a margin above the first
+   * contained message to fit the label pill. */
+  const NOTE_GAP   = 64;
+  const FRAME_PAD  = 16;
+
   function sequenceLayout(diagram) {
     const nodes = diagram.nodes;
     const edges = diagram.edges || [];
@@ -548,15 +554,16 @@
     }
     const participantBottom = nodes.reduce((m, n) => Math.max(m, n.y + n._h), 0);
 
-    // 2. Stack edges as time-ordered messages.
+    // 2. Stack edges as time-ordered messages. Note items get a wider
+    //    slot so the note box doesn't crowd the surrounding arrows.
     let yCursor = participantBottom + MESSAGE_TOP;
     for (const e of edges) {
       e._sequence = true;
       e._seqY = yCursor;
-      yCursor += MESSAGE_GAP;
+      const slot = (e.kind === 'note' && e.note) ? NOTE_GAP : MESSAGE_GAP;
+      yCursor += slot;
     }
-    // 3. Lifeline extent — saved on the diagram so the renderer can
-    //    paint them after the participant row is drawn.
+    // 3. Lifeline extent.
     diagram._lifelineY1 = participantBottom + 8;
     diagram._lifelineY2 = Math.max(yCursor, participantBottom + MESSAGE_TOP) + 12;
   }
@@ -575,7 +582,156 @@
     }
   }
 
+  /* Render a note from a sequence-edge item with `kind: 'note'` and a
+   * `note: { position, participants, text }` payload. The note is a
+   * yellow rounded rectangle:
+   *   - `over A,B` spans from A's lifeline to B's, plus 12 px on each side
+   *   - `over A`   spans the width of A's lifeline area
+   *   - `left of A`  sits to the left of A's lifeline
+   *   - `right of A` sits to the right of A's lifeline
+   *
+   * If the note payload is missing (older converter output) we fall
+   * back to the previous self-loop-arrow rendering — the caller
+   * dispatches there. */
+  function drawSequenceNote(layer, edge, nodeMap) {
+    const note = edge.note || {};
+    const ids  = (note.participants || [edge.from]).filter(id => nodeMap.has(id));
+    if (!ids.length) return;
+    const xs = ids.map(id => {
+      const n = nodeMap.get(id);
+      return n.x + n._w / 2;
+    });
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const text  = (note.text || edge.label || '').replace(/^📝\s*/, '');
+    const padX = 14, padY = 8, gap = 12;
+    const textW = Math.max(40, text.length * 6.5);
+    const textH = 16;
+    let x, w;
+    if (note.position === 'left' || note.position === 'left of') {
+      w = Math.max(textW + padX * 2, 80);
+      x = minX - gap - w;
+    } else if (note.position === 'right' || note.position === 'right of') {
+      w = Math.max(textW + padX * 2, 80);
+      x = maxX + gap;
+    } else {
+      // 'over' — span from leftmost to rightmost lifeline, plus padding
+      const span = maxX - minX;
+      w = Math.max(span + gap * 2, textW + padX * 2);
+      x = (minX + maxX) / 2 - w / 2;
+    }
+    const h = textH + padY * 2;
+    const y = edge._seqY - h / 2;
+
+    const g = $('g', { class: 'qa-seq-note' }, layer);
+    $('rect', {
+      x, y, width: w, height: h, rx: 4,
+      fill: '#fef3c7', stroke: '#a16207', 'stroke-width': '1',
+      filter: 'url(#qa-shadow)',
+    }, g);
+    const t = $('text', {
+      x: x + w / 2, y: y + h / 2 + 1,
+      'text-anchor': 'middle', 'dominant-baseline': 'middle',
+      fill: '#78350f', 'font-family': "'Inter', system-ui, sans-serif",
+      'font-size': '11', 'font-weight': '500',
+    }, g);
+    t.textContent = text;
+  }
+
+  /* Frame primitive — labeled rectangle wrapping a contiguous block
+   * of messages. Used for Mermaid loop / alt / opt / par / critical /
+   * break / rect. Each frame has:
+   *   { kind, label, startMsgIdx, endMsgIdx, dividers? }
+   * The Y range is derived from `edges[startMsgIdx]._seqY` (inclusive)
+   * down to `edges[endMsgIdx]._seqY` plus a margin. The X range covers
+   * the leftmost-to-rightmost participant touched by any message in
+   * the range, plus padding. */
+  function drawSequenceFrames(svg, diagram, nodeMap) {
+    const frames = diagram.frames || [];
+    if (!frames.length) return;
+    const edges = diagram.edges || [];
+    const g = $('g', { class: 'qa-seq-frames' });
+    // Insert behind everything else but in front of lifelines.
+    const lifelineG = svg.children.find(c => (c.attrs && (c.attrs.class || '')) === 'qa-lifelines');
+    if (lifelineG && lifelineG.parentNode === svg) {
+      svg.insertBefore(g, lifelineG);
+    } else {
+      svg.insertBefore(g, svg.firstChild);
+    }
+    for (const f of frames) {
+      const slice = edges.slice(f.startMsgIdx, f.endMsgIdx + 1);
+      if (!slice.length) continue;
+      // y range
+      const ys = slice.map(e => e._seqY).filter(v => v != null);
+      if (!ys.length) continue;
+      const yTop = Math.min(...ys) - 28;
+      const yBot = Math.max(...ys) + (slice[slice.length - 1] && slice[slice.length - 1].kind === 'note' ? 36 : 20);
+      // x range — touch every participant referenced by any message in the slice
+      const ids = new Set();
+      for (const e of slice) {
+        if (e.from && nodeMap.has(e.from)) ids.add(e.from);
+        if (e.to   && nodeMap.has(e.to))   ids.add(e.to);
+        if (e.note && e.note.participants) for (const p of e.note.participants) if (nodeMap.has(p)) ids.add(p);
+      }
+      if (!ids.size) continue;
+      const xs = Array.from(ids).map(id => {
+        const n = nodeMap.get(id);
+        return [n.x, n.x + n._w];
+      });
+      const xL = Math.min(...xs.map(p => p[0])) - FRAME_PAD;
+      const xR = Math.max(...xs.map(p => p[1])) + FRAME_PAD;
+      const fg = $('g', { class: 'qa-seq-frame qa-seq-frame-' + f.kind }, g);
+      $('rect', {
+        x: xL, y: yTop, width: xR - xL, height: yBot - yTop, rx: 6,
+        fill: 'none', stroke: '#64748b', 'stroke-width': '1.2',
+        'stroke-dasharray': f.kind === 'opt' ? '4 3' : null,
+      }, fg);
+      // Label pill in the top-left corner
+      const labelText = (f.kind === 'rect' ? '' : f.kind) + (f.label ? ' ' + f.label : '');
+      if (labelText.trim()) {
+        const labelW = Math.max(40, labelText.trim().length * 6.5 + 18);
+        $('rect', {
+          x: xL, y: yTop, width: labelW, height: 18, rx: 0,
+          fill: '#475569', stroke: 'none',
+        }, fg);
+        const t = $('text', {
+          x: xL + labelW / 2, y: yTop + 9 + 1,
+          'text-anchor': 'middle', 'dominant-baseline': 'middle',
+          fill: '#ffffff', 'font-family': "'Inter', system-ui, sans-serif",
+          'font-size': '10', 'font-weight': '700',
+          'text-transform': 'uppercase', 'letter-spacing': '0.05em',
+        }, fg);
+        t.textContent = labelText.trim();
+      }
+      // Dividers (for alt/par): horizontal line at each divider index
+      if (f.dividers && f.dividers.length) {
+        for (const d of f.dividers) {
+          const dEdge = edges[d.idx];
+          if (!dEdge || dEdge._seqY == null) continue;
+          const dy = dEdge._seqY - 14;
+          $('line', {
+            x1: xL, x2: xR, y1: dy, y2: dy,
+            stroke: '#94a3b8', 'stroke-width': '1', 'stroke-dasharray': '4 4',
+          }, fg);
+          if (d.label) {
+            $('text', {
+              x: xL + 8, y: dy - 4,
+              'font-family': "'Inter', system-ui, sans-serif", 'font-size': '10',
+              'font-weight': '600', fill: '#475569',
+            }, fg).textContent = '[' + d.label + ']';
+          }
+        }
+      }
+    }
+  }
+
   function drawSequenceEdge(layer, edge, nodeMap) {
+    // Dispatch to the note renderer when the converter has emitted
+    // proper note metadata. Edges without `note` fall through to the
+    // legacy self-loop-arrow rendering for backward compatibility.
+    if (edge.kind === 'note' && edge.note) {
+      drawSequenceNote(layer, edge, nodeMap);
+      return;
+    }
     const a = nodeMap.get(edge.from), b = nodeMap.get(edge.to);
     if (!a || !b) return;
     const ax = a.x + a._w / 2;
@@ -1175,6 +1331,9 @@
     }
     if (diagram.layout === 'sequence') {
       drawLifelines(svg, diagram);
+      // Frame rectangles sit BEHIND messages and notes but above the
+      // lifelines (insertion order handled inside drawSequenceFrames).
+      drawSequenceFrames(svg, diagram, nodeMap);
     }
     const eLayer = $('g', { class: 'qa-edges' });
     svg.insertBefore(eLayer, firstNode);
@@ -1440,7 +1599,7 @@
 
   return {
     render,
-    version: '0.4.3',
+    version: '0.4.4',
     THEMES,
     SHAPES,
     autoLayout,
