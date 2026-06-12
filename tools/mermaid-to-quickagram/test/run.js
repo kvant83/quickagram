@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-/* Test runner for mermaid-to-quickagram.
+/* Test runner for mermaid-to-quickagram — CONVERTER FUNCTIONALITY ONLY.
  *
- * Each section exercises one parser plus the emitter, asserting node
- * counts, edge counts, kinds, arrow-marker assignments, and full
- * round-trip through the Quickagram engine (using the same DOM stub
- * pattern as test/smoke.js). Run with:
+ * Scope: parser/AST shape, emit-format correctness, util helpers, and
+ * a few round-trip sanity checks that the produced diagram object is
+ * accepted by the Quickagram engine without throwing. Visual rendering
+ * snapshots are in test/smoke.js (the engine test suite), because
+ * how a diagram RENDERS is the engine's responsibility.
  *
+ * Run with:
  *   node tools/mermaid-to-quickagram/test/run.js
  */
 'use strict';
@@ -70,12 +72,6 @@ const { parseClass }       = require('../parse-class');
 const { parseState }       = require('../parse-state');
 const { build, prettyJS }  = require('../emit');
 
-/* Reuse the engine's snapshot + invariant harnesses so converter
- * end-to-end tests share the same baseline format and the same
- * geometric correctness checks. */
-const { snapshot }       = require(path.join(__dirname, '..', '..', '..', 'test', 'snapshot'));
-const { checkInvariants }= require(path.join(__dirname, '..', '..', '..', 'test', 'invariants'));
-
 const fixture = name => fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8');
 
 let passed = 0, failed = 0;
@@ -85,57 +81,6 @@ function t(name, fn) {
   catch (e) { failed++; console.log('  ✗ ' + name + '\n      ' + e.message); }
 }
 function render(d) { const c = makeEl('div'); Q.render(c, d); return c.children[0]; }
-
-/* End-to-end snapshot helper: takes a raw Mermaid source string,
- * dispatches to the right parser, emits a diagram, renders through
- * the engine, runs the geometric invariants, and compares the SVG
- * against the approved baseline file. Catches converter bugs AND
- * engine regressions in a single check. */
-const PARSERS = {
-  flowchart: parseFlowchart,
-  sequence:  parseSequence,
-  class:     parseClass,
-  state:     parseState,
-};
-function snapEndToEnd(name, mermaidSrc) {
-  const kind = sniffKind(mermaidSrc);
-  if (!kind || !PARSERS[kind]) {
-    failed++;
-    console.log('  ✗ ' + name + ' — could not detect diagram type from header');
-    return;
-  }
-  let ast, diagram;
-  try {
-    ast = PARSERS[kind](mermaidSrc);
-    diagram = build(ast);
-  } catch (e) {
-    failed++;
-    console.log('  ✗ ' + name + ' — parse/build failed: ' + e.message);
-    return;
-  }
-  const container = makeEl('div');
-  try { Q.render(container, diagram); }
-  catch (e) {
-    failed++;
-    console.log('  ✗ ' + name + ' — render failed: ' + e.message);
-    return;
-  }
-  const svg = container.children[0];
-
-  // Geometric correctness — fail before snapshotting if the render is
-  // visually broken (overlap, edge-through-node, off-shape endpoint).
-  const viols = checkInvariants(svg, diagram);
-  if (viols.length) {
-    failed++;
-    console.log('  ✗ ' + name + ' (invariants)');
-    for (const v of viols) console.log('      ' + JSON.stringify(v));
-    return;
-  }
-
-  const r = snapshot(name, container);
-  if (r.pass) { passed++; console.log('  ✓ ' + name + '  ' + r.msg); }
-  else        { failed++; console.log('  ✗ ' + name + '\n      ' + r.msg.split('\n').join('\n      ')); }
-}
 
 /* =====================================================================
  * sniff
@@ -547,21 +492,6 @@ section('util: shared helpers');
       assert.strictEqual(r.next, 13);
     });
 }
-
-/* =====================================================================
- * end-to-end snapshots: raw Mermaid text → converter → engine → SVG
- *
- * Each case takes a Mermaid source file, runs it through the full
- * pipeline, renders, runs visual-correctness invariants, and compares
- * the resulting SVG against the user-approved baseline in
- * test/snapshots/<name>.svg. To re-bless after an intentional change:
- *   UPDATE_SNAPSHOTS=1 node tools/mermaid-to-quickagram/test/run.js
- * ===================================================================== */
-section('end-to-end snapshots: Mermaid → SVG');
-
-snapEndToEnd('converter-flowchart-christmas',  fixture('flowchart-christmas.mmd'));
-snapEndToEnd('converter-class-animals',        fixture('class-animals.mmd'));
-snapEndToEnd('converter-state-multi-end',      fixture('state-multi-end.mmd'));
 
 console.log('\n----------------------------------------');
 console.log(`mermaid-to-quickagram: ${passed} passed, ${failed} failed`);

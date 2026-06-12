@@ -63,6 +63,24 @@ const Q = require(path.join(__dirname, '..', 'src', 'quickagram.js'));
 const { snapshot } = require('./snapshot');
 const { checkInvariants } = require('./invariants');
 
+/* ---------- converter pipeline (for end-to-end rendering snapshots) ----------
+ *
+ * Visual rendering of mermaid-to-quickagram output IS the engine's
+ * responsibility: the converter only produces a Quickagram diagram
+ * object, and whether the engine then draws that object correctly is
+ * an engine concern. So the snapshot-based render tests live here in
+ * the engine test suite, not in the converter test runner. */
+const fs = require('fs');
+const CONV = path.join(__dirname, '..', 'tools', 'mermaid-to-quickagram');
+const { sniffKind }      = require(path.join(CONV, 'sniff'));
+const { parseFlowchart } = require(path.join(CONV, 'parse-flowchart'));
+const { parseSequence }  = require(path.join(CONV, 'parse-sequence'));
+const { parseClass }     = require(path.join(CONV, 'parse-class'));
+const { parseState }     = require(path.join(CONV, 'parse-state'));
+const { build: convBuild } = require(path.join(CONV, 'emit'));
+const PARSERS = { flowchart: parseFlowchart, sequence: parseSequence, class: parseClass, state: parseState };
+const convFixture = name => fs.readFileSync(path.join(CONV, 'test', 'fixtures', name), 'utf8');
+
 /* ---------- tiny test runner ---------- */
 let passed = 0, failed = 0;
 const section = name => console.log('\n# ' + name);
@@ -97,6 +115,27 @@ function snap(name, diagram) {
   const r = snapshot(name, c);
   if (r.pass) { passed++; console.log('  ✓ ' + name + '  ' + r.msg); }
   else        { failed++; console.log('  ✗ ' + name + '\n      ' + r.msg.split('\n').join('\n      ')); }
+}
+
+/* End-to-end snapshot helper for converter output. Takes raw Mermaid
+ * text, dispatches to the right parser, builds a Quickagram diagram,
+ * then runs snap() (invariants + snapshot). Exactly the same checks as
+ * snap() — this is just a wrapper that handles the parse/build step. */
+function snapEndToEnd(name, mermaidSrc) {
+  const kind = sniffKind(mermaidSrc);
+  if (!kind || !PARSERS[kind]) {
+    failed++;
+    console.log('  ✗ ' + name + ' — could not detect diagram type from header');
+    return;
+  }
+  let diagram;
+  try { diagram = convBuild(PARSERS[kind](mermaidSrc)); }
+  catch (e) {
+    failed++;
+    console.log('  ✗ ' + name + ' — parse/build failed: ' + e.message);
+    return;
+  }
+  snap(name, diagram);
 }
 
 /* ---------- helpers used across tests ---------- */
@@ -784,6 +823,19 @@ snap('sequence-diagram-lifelines', {
     { from: 'John',  to: 'Alice', label: 'I am good, thanks!', style: 'dashed' },
   ],
 });
+
+/* =====================================================================
+ * Converter end-to-end rendering snapshots
+ *
+ * Mermaid source → converter parse/build → engine render → snapshot
+ * diff. Lives here (not in the converter runner) because rendering is
+ * an engine concern. Each baseline is in test/snapshots/converter-*.svg.
+ * ===================================================================== */
+section('Converter end-to-end render snapshots');
+
+snapEndToEnd('converter-flowchart-christmas', convFixture('flowchart-christmas.mmd'));
+snapEndToEnd('converter-class-animals',       convFixture('class-animals.mmd'));
+snapEndToEnd('converter-state-multi-end',     convFixture('state-multi-end.mmd'));
 
 /* =====================================================================
  * Summary
