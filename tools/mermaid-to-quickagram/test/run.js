@@ -256,6 +256,34 @@ section('sequence: end-to-end fixture');
   });
 }
 
+section('sequence: activation/deactivation prefixes are stripped');
+{
+  // Mermaid: `->>+X` activates X's lifeline; `->>-X` deactivates.
+  // The +/- is NOT part of the participant id. The parser strips
+  // the prefix and records the activation semantic on the message.
+  const ast = parseSequence(fixture('sequence-activations.mmd'));
+  t('exactly 2 participants (no phantom +John / -Alice)', () => {
+    assert.strictEqual(ast.participants.length, 2);
+    const ids = ast.participants.map(p => p.id).sort();
+    assert.deepStrictEqual(ids, ['Alice', 'John']);
+  });
+  t('4 messages', () => assert.strictEqual(ast.messages.length, 4));
+  t('+John message records activation: "activate"', () => {
+    const m = ast.messages[0];
+    assert.strictEqual(m.to, 'John');
+    assert.strictEqual(m.activation, 'activate');
+  });
+  t('-Alice message records activation: "deactivate"', () => {
+    const m = ast.messages[2];
+    assert.strictEqual(m.to, 'Alice');
+    assert.strictEqual(m.activation, 'deactivate');
+  });
+  t('response messages are dashed', () => {
+    assert.strictEqual(ast.messages[2].style, 'dashed');
+    assert.strictEqual(ast.messages[3].style, 'dashed');
+  });
+}
+
 /* =====================================================================
  * class
  * ===================================================================== */
