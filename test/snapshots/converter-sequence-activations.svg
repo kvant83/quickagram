@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg class="qa-svg" preserveAspectRatio="xMidYMid meet" viewBox="-40 -40 496 396" xmlns="http://www.w3.org/2000/svg">
+  <g class="qa-lifelines">
+    <line stroke="#94a3b8" stroke-dasharray="4 4" stroke-width="1.2" x1="84" x2="84" y1="80" y2="316"/>
+    <line stroke="#94a3b8" stroke-dasharray="4 4" stroke-width="1.2" x1="332" x2="332" y1="80" y2="316"/>
+  </g>
+  <defs>
+    <filter height="140%" id="qa-shadow" width="140%" x="-20%" y="-20%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.5"/>
+      <feOffset dx="0" dy="3" result="off"/>
+      <feComponentTransfer>
+        <feFuncA slope="0.25" type="linear"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="qa-arrow" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="9" refY="5" viewBox="0 0 10 10">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#334155"/>
+    </marker>
+    <marker id="qa-triangle" markerHeight="12" markerWidth="12" orient="auto-start-reverse" refX="11" refY="6" viewBox="0 0 12 12">
+      <path d="M 0 0 L 11 6 L 0 12 Z" fill="#ffffff" stroke="#334155" stroke-linejoin="round" stroke-width="1.6"/>
+    </marker>
+    <marker id="qa-diamond" markerHeight="10" markerWidth="14" orient="auto-start-reverse" refX="1" refY="5" viewBox="0 0 14 10">
+      <path d="M 0 5 L 7 0 L 14 5 L 7 10 Z" fill="#334155" stroke="#334155" stroke-linejoin="round" stroke-width="1.2"/>
+    </marker>
+    <marker id="qa-odiamond" markerHeight="10" markerWidth="14" orient="auto-start-reverse" refX="1" refY="5" viewBox="0 0 14 10">
+      <path d="M 0 5 L 7 0 L 14 5 L 7 10 Z" fill="#ffffff" stroke="#334155" stroke-linejoin="round" stroke-width="1.4"/>
+    </marker>
+    <marker id="qa-circle" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="5" refY="5" viewBox="0 0 10 10">
+      <circle cx="5" cy="5" fill="#334155" r="4" stroke="#334155"/>
+    </marker>
+    <marker id="qa-cross" markerHeight="10" markerWidth="10" orient="auto-start-reverse" refX="5" refY="5" viewBox="0 0 10 10">
+      <path d="M 1 1 L 9 9 M 9 1 L 1 9" fill="none" stroke="#334155" stroke-linecap="round" stroke-width="1.8"/>
+    </marker>
+    <linearGradient id="qa-g-e0e7ff-818cf8" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#e2e9ff"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="qa-g-e0e7ff-818cf8" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#e2e9ff"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+  </defs>
+  <g class="qa-edges">
+    <g class="qa-edge qa-seq-edge">
+      <path d="M 84 112 L 332 112" fill="none" marker-end="url(#qa-arrow)" stroke="#475569" stroke-linecap="round" stroke-width="1.8"/>
+      <rect fill="#ffffff" height="18" rx="7" stroke="#cbd5e1" stroke-width="1" width="168" x="-6" y="-3"/>
+      <text fill="#0f172a" font-family="'Inter', system-ui, sans-serif" font-size="11" font-weight="500" text-anchor="middle" x="208" y="106">Hello John, how are you?</text>
+    </g>
+    <g class="qa-edge qa-seq-edge">
+      <path d="M 84 160 L 332 160" fill="none" marker-end="url(#qa-arrow)" stroke="#475569" stroke-linecap="round" stroke-width="1.8"/>
+      <rect fill="#ffffff" height="18" rx="7" stroke="#cbd5e1" stroke-width="1" width="155" x="-6" y="-3"/>
+      <text fill="#0f172a" font-family="'Inter', system-ui, sans-serif" font-size="11" font-weight="500" text-anchor="middle" x="208" y="154">John, can you hear me?</text>
+    </g>
+    <g class="qa-edge qa-seq-edge">
+      <path d="M 332 208 L 84 208" fill="none" marker-end="url(#qa-arrow)" stroke="#475569" stroke-dasharray="6 5" stroke-linecap="round" stroke-width="1.8"/>
+      <rect fill="#ffffff" height="18" rx="7" stroke="#cbd5e1" stroke-width="1" width="174.5" x="-6" y="-3"/>
+      <text fill="#0f172a" font-family="'Inter', system-ui, sans-serif" font-size="11" font-weight="500" text-anchor="middle" x="208" y="202">Hi Alice, I can hear you!</text>
+    </g>
+    <g class="qa-edge qa-seq-edge">
+      <path d="M 332 256 L 84 256" fill="none" marker-end="url(#qa-arrow)" stroke="#475569" stroke-dasharray="6 5" stroke-linecap="round" stroke-width="1.8"/>
+      <rect fill="#ffffff" height="18" rx="7" stroke="#cbd5e1" stroke-width="1" width="96.5" x="-6" y="-3"/>
+      <text fill="#0f172a" font-family="'Inter', system-ui, sans-serif" font-size="11" font-weight="500" text-anchor="middle" x="208" y="250">I feel great!</text>
+    </g>
+  </g>
+  <g class="qa-node" data-id="Alice" transform="translate(0,0)">
+    <path d="M 12 0 H 156 A 12 12 0 0 1 168 12 V 60 A 12 12 0 0 1 156 72 H 12 A 12 12 0 0 1 0 60 V 12 A 12 12 0 0 1 12 0 Z" fill="url(#qa-g-e0e7ff-818cf8)" filter="url(#qa-shadow)" stroke="#3730a3" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#1e293b" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="36">Alice</text>
+  </g>
+  <g class="qa-node" data-id="John" transform="translate(248,0)">
+    <path d="M 12 0 H 156 A 12 12 0 0 1 168 12 V 60 A 12 12 0 0 1 156 72 H 12 A 12 12 0 0 1 0 60 V 12 A 12 12 0 0 1 12 0 Z" fill="url(#qa-g-e0e7ff-818cf8)" filter="url(#qa-shadow)" stroke="#3730a3" stroke-width="1.5"/>
+    <text dominant-baseline="middle" fill="#1e293b" font-family="'Inter', system-ui, sans-serif" font-size="13" font-weight="600" pointer-events="none" text-anchor="middle" x="84" y="36">John</text>
+  </g>
+</svg>

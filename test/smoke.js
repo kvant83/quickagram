@@ -833,9 +833,34 @@ snap('sequence-diagram-lifelines', {
  * ===================================================================== */
 section('Converter end-to-end render snapshots');
 
-snapEndToEnd('converter-flowchart-christmas', convFixture('flowchart-christmas.mmd'));
-snapEndToEnd('converter-class-animals',       convFixture('class-animals.mmd'));
-snapEndToEnd('converter-state-multi-end',     convFixture('state-multi-end.mmd'));
+snapEndToEnd('converter-flowchart-christmas',  convFixture('flowchart-christmas.mmd'));
+snapEndToEnd('converter-class-animals',        convFixture('class-animals.mmd'));
+snapEndToEnd('converter-state-multi-end',      convFixture('state-multi-end.mmd'));
+snapEndToEnd('converter-sequence-activations', convFixture('sequence-activations.mmd'));
+
+snap('sequence-frames-loop-with-note', {
+  // Composite test of v0.4.4+ frame + note primitives + v0.4.6/7
+  // self-loop sizing fixes. User-approved baseline.
+  layout:  'sequence',
+  padding: 40,
+  nodes: [
+    { id: 'Alice', kind: 'participant', label: 'Alice' },
+    { id: 'John',  kind: 'participant', label: 'John'  },
+    { id: 'Bob',   kind: 'participant', label: 'Bob'   },
+  ],
+  edges: [
+    { from: 'Alice', to: 'John', label: 'Hello John, how are you?' },
+    { from: 'John',  to: 'John', label: 'Fight against hypochondria' },
+    { from: 'John',  to: 'John', kind: 'note', label: '📝 Rational thoughts!', style: 'dotted', toArrow: 'none',
+      note: { position: 'right', participants: ['John'], text: 'Rational thoughts!' } },
+    { from: 'John',  to: 'Alice', label: 'Great!',          style: 'dashed' },
+    { from: 'John',  to: 'Bob',   label: 'How about you?'   },
+    { from: 'Bob',   to: 'John',  label: 'Jolly good!',     style: 'dashed' },
+  ],
+  frames: [
+    { kind: 'loop', label: 'Healthcheck', startMsgIdx: 1, endMsgIdx: 1 },
+  ],
+});
 
 /* =====================================================================
  * Summary

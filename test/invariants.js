@@ -34,17 +34,25 @@ function pathPoints(d) {
   let cx = 0, cy = 0;
   for (let i = 0; i < tokens.length; ) {
     const t = tokens[i++];
+    // SVG path commands: UPPERCASE = absolute, lowercase = relative.
+    // Quickagram's self-message loops use `h` / `v` (relative).
     if (t === 'M' || t === 'L') {
       cx = +tokens[i++]; cy = +tokens[i++];
       out.push([cx, cy]);
+    } else if (t === 'm' || t === 'l') {
+      cx += +tokens[i++]; cy += +tokens[i++];
+      out.push([cx, cy]);
     } else if (t === 'H') { cx = +tokens[i++]; out.push([cx, cy]); }
-    else if (t === 'V')   { cy = +tokens[i++]; out.push([cx, cy]); }
+    else if (t === 'h') { cx += +tokens[i++]; out.push([cx, cy]); }
+    else if (t === 'V') { cy = +tokens[i++]; out.push([cx, cy]); }
+    else if (t === 'v') { cy += +tokens[i++]; out.push([cx, cy]); }
     else if (t === 'Q')   {
-      // control + end — keep only the end point (the curve sweeps near
-      // it; for overlap detection the corner-rounded curves are close
-      // to the chord)
       i += 2;                              // skip control point
       cx = +tokens[i++]; cy = +tokens[i++];
+      out.push([cx, cy]);
+    } else if (t === 'q') {
+      i += 2;                              // skip relative control point
+      cx += +tokens[i++]; cy += +tokens[i++];
       out.push([cx, cy]);
     } else if (t === 'Z' || t === 'z') {
       // ignore
@@ -63,13 +71,18 @@ function pathPoints(d) {
 function collectEdgePaths(svg, diagram) {
   const groups = svg.querySelectorAll('.qa-edge');
   const out = [];
+  // Notes render as `.qa-seq-note`, NOT `.qa-edge`, so the SVG group
+  // count is smaller than diagram.edges.length when notes are present.
+  // Filter to the diagram edges that actually emit a `.qa-edge` element
+  // so the zip below stays aligned.
+  const renderedEdges = (diagram.edges || []).filter(e => !(e.kind === 'note' && e.note));
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
     const p = g.children.find(c => c.tag === 'path' && c.attrs.d);
     if (!p) continue;
     out.push({
       idx: i,
-      edge: diagram.edges ? diagram.edges[i] : null,
+      edge: renderedEdges[i] || null,
       pts: pathPoints(p.attrs.d),
     });
   }
