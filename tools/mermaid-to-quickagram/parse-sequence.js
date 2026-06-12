@@ -64,6 +64,16 @@ function readSeqId(line, i) {
   return j > i ? { id: line.slice(i, j), next: j } : null;
 }
 
+/* Strip Mermaid activation/deactivation prefix (`+` or `-`) from the
+ * destination ID after an arrow. Returns { id, activation } where
+ * activation is 'activate' | 'deactivate' | null. */
+function stripActivation(id) {
+  const trimmed = String(id || '').trim();
+  if (trimmed.startsWith('+')) return { id: trimmed.slice(1).trim(), activation: 'activate'   };
+  if (trimmed.startsWith('-')) return { id: trimmed.slice(1).trim(), activation: 'deactivate' };
+  return { id: trimmed, activation: null };
+}
+
 function skipSp(line, i) {
   while (i < line.length && (line[i] === ' ' || line[i] === '\t')) i++;
   return i;
@@ -191,25 +201,37 @@ function parseSequence(src) {
       continue;
     }
 
-    // message: <id> <arrow> <id> : <text>
+    // message: <id> <arrow>[+|-] <id> : <text>
+    //
+    // Mermaid lets you tack `+` (activate) or `-` (deactivate) onto
+    // the destination immediately after the arrow:
+    //   Alice ->>+ John : ...   activates John's lifeline
+    //   John  -->>- Alice: ...  deactivates Alice's lifeline
+    //
+    // Quickagram has no activation-box rendering, so we drop the
+    // semantic and just strip the prefix character — otherwise the
+    // `+`/`-` ends up baked into the participant id, creating phantom
+    // participants like "+John" / "-Alice".
     const arr = locateArrow(trim);
     if (!arr) continue;
-    const fromPart = trim.slice(0, arr.pos).trim();
+    const fromPart = stripActivation(trim.slice(0, arr.pos).trim()).id;
     const rest     = trim.slice(arr.pos + arr.len);
     const colonAt  = rest.indexOf(':');
-    const toPart   = (colonAt === -1 ? rest : rest.slice(0, colonAt)).trim();
+    const toRaw    = (colonAt === -1 ? rest : rest.slice(0, colonAt)).trim();
+    const toStrip  = stripActivation(toRaw);
     const label    = colonAt === -1 ? '' : rest.slice(colonAt + 1).trim();
-    if (!fromPart || !toPart) continue;
+    if (!fromPart || !toStrip.id) continue;
     ensureParticipant(fromPart);
-    ensureParticipant(toPart);
+    ensureParticipant(toStrip.id);
     messages.push({
-      kind:      'message',
-      from:      fromPart,
-      to:        toPart,
+      kind:       'message',
+      from:       fromPart,
+      to:         toStrip.id,
       label,
-      style:     arr.style,
-      toArrow:   arr.toArrow,
-      fromArrow: 'none',
+      style:      arr.style,
+      toArrow:    arr.toArrow,
+      fromArrow:  'none',
+      activation: toStrip.activation || null,
     });
   }
 
