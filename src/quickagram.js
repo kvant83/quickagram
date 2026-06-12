@@ -651,7 +651,10 @@
     const edges = diagram.edges || [];
     const g = $('g', { class: 'qa-seq-frames' });
     // Insert behind everything else but in front of lifelines.
-    const lifelineG = svg.children.find(c => (c.attrs && (c.attrs.class || '')) === 'qa-lifelines');
+    // Use querySelector — `svg.children` is an HTMLCollection in real
+    // browsers and has no `.find()`. The test DOM stub also implements
+    // querySelector so this works in both.
+    const lifelineG = svg.querySelector('.qa-lifelines');
     if (lifelineG && lifelineG.parentNode === svg) {
       svg.insertBefore(g, lifelineG);
     } else {
@@ -1599,7 +1602,7 @@
 
   return {
     render,
-    version: '0.4.4',
+    version: '0.4.5',
     THEMES,
     SHAPES,
     autoLayout,
