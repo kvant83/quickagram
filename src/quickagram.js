@@ -663,25 +663,71 @@
     for (const f of frames) {
       const slice = edges.slice(f.startMsgIdx, f.endMsgIdx + 1);
       if (!slice.length) continue;
-      // y range
-      const ys = slice.map(e => e._seqY).filter(v => v != null);
-      if (!ys.length) continue;
-      const yTop = Math.min(...ys) - 28;
-      const yBot = Math.max(...ys) + (slice[slice.length - 1] && slice[slice.length - 1].kind === 'note' ? 36 : 20);
-      // x range — touch every participant referenced by any message in the slice
-      const ids = new Set();
+
+      /* Compute the frame bounds by walking each message in the slice
+       * and accounting for its ACTUAL geometric extent, not just the
+       * declared from/to participants:
+       *
+       *   - Self-message: renders as a loop sticking 60 px to the right
+       *     of the participant's centre with a label that extends
+       *     further. The loop body also drops ~29 px below _seqY.
+       *   - Note (over/left/right): rectangle extending past the
+       *     participant on the chosen side, label inside.
+       *   - Regular message: spans from sender bbox to recipient bbox.
+       *
+       * Without this the frame clips through self-message loops and
+       * their labels, exactly the symptom of the Healthcheck repro. */
+      let xL = Infinity, xR = -Infinity, yTop = Infinity, yBot = -Infinity;
+      const selfLoopLabelExtent = (e) => {
+        const lab = String(e.label || '').replace(/^📝\s*/, '');
+        return 60 + Math.max(40, lab.length * 6.5) + 12;
+      };
       for (const e of slice) {
-        if (e.from && nodeMap.has(e.from)) ids.add(e.from);
-        if (e.to   && nodeMap.has(e.to))   ids.add(e.to);
-        if (e.note && e.note.participants) for (const p of e.note.participants) if (nodeMap.has(p)) ids.add(p);
+        if (e._seqY == null) continue;
+        yTop = Math.min(yTop, e._seqY);
+        // Per-edge bottom extent — self-loops drop ~29 px, notes ~30 px.
+        let edgeYBot;
+        if (e.kind === 'note' && e.note)        edgeYBot = e._seqY + 30;
+        else if (e.from && e.from === e.to)     edgeYBot = e._seqY + 36;   // self-message
+        else                                    edgeYBot = e._seqY + 8;
+        yBot = Math.max(yBot, edgeYBot);
+
+        // x extent — include every participant the message touches,
+        // and the loop/note overhang past the participant bbox.
+        const touched = new Set();
+        if (e.from && nodeMap.has(e.from)) touched.add(e.from);
+        if (e.to   && nodeMap.has(e.to))   touched.add(e.to);
+        if (e.note && e.note.participants) for (const p of e.note.participants) if (nodeMap.has(p)) touched.add(p);
+        for (const id of touched) {
+          const n = nodeMap.get(id);
+          xL = Math.min(xL, n.x);
+          xR = Math.max(xR, n.x + n._w);
+        }
+        // Self-loop: the loop + label extend to the right of the lifeline.
+        if (e.from && e.from === e.to && nodeMap.has(e.from) && (!e.kind || e.kind === 'message')) {
+          const n = nodeMap.get(e.from);
+          const cx = n.x + n._w / 2;
+          xR = Math.max(xR, cx + selfLoopLabelExtent(e));
+        }
+        // Note position overhang.
+        if (e.kind === 'note' && e.note && e.note.participants && e.note.participants.length) {
+          const noteIds = e.note.participants.filter(p => nodeMap.has(p));
+          if (noteIds.length) {
+            const noteXs = noteIds.map(id => nodeMap.get(id).x + nodeMap.get(id)._w / 2);
+            const noteMin = Math.min(...noteXs), noteMax = Math.max(...noteXs);
+            const labelW = Math.max(40, String(e.note.text || '').length * 6.5 + 28);
+            if (e.note.position === 'right' || e.note.position === 'right of') {
+              xR = Math.max(xR, noteMax + 12 + labelW);
+            } else if (e.note.position === 'left' || e.note.position === 'left of') {
+              xL = Math.min(xL, noteMin - 12 - labelW);
+            }
+          }
+        }
       }
-      if (!ids.size) continue;
-      const xs = Array.from(ids).map(id => {
-        const n = nodeMap.get(id);
-        return [n.x, n.x + n._w];
-      });
-      const xL = Math.min(...xs.map(p => p[0])) - FRAME_PAD;
-      const xR = Math.max(...xs.map(p => p[1])) + FRAME_PAD;
+      if (!isFinite(xL) || !isFinite(xR) || !isFinite(yTop) || !isFinite(yBot)) continue;
+      // outer padding around the contents
+      xL -= FRAME_PAD; xR += FRAME_PAD;
+      yTop -= 28;      yBot += 16;
       const fg = $('g', { class: 'qa-seq-frame qa-seq-frame-' + f.kind }, g);
       $('rect', {
         x: xL, y: yTop, width: xR - xL, height: yBot - yTop, rx: 6,
@@ -1602,7 +1648,7 @@
 
   return {
     render,
-    version: '0.4.5',
+    version: '0.4.6',
     THEMES,
     SHAPES,
     autoLayout,
